@@ -1,0 +1,60 @@
+# ==============================================================================
+# LNMCBM Coding Competition Portal - Git Ignore Configuration
+# ==============================================================================
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing and Coverage
+/coverage
+*.lcov
+
+# Next.js Build Outputs
+/.next/
+/out/
+/build
+
+# Vercel Deployment Artifacts
+.vercel
+
+# Environment Variables & Secrets (CRITICAL: Never commit)
+.env
+.env*.local
+.env.production
+.env.staging
+*.pem
+*.key
+credentials*.json
+*.credentials
+
+# Database Backups & Private Snapshot Exports
+/backups/
+backups/
+*.dump
+*.sql.gz
+*.tar.gz
+
+# Local Log Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# System Generated Directories & OS Files
+.DS_Store
+Thumbs.db
+.system_generated/
+.idea/
+.vscode/
+
+# TypeScript Build Info
+*.tsbuildinfo
+next-env.d.ts
+
+# Temporary Scratch Files
+temp/
+tmp/
+scratch/
