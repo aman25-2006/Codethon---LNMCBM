@@ -170,36 +170,36 @@ public class Solution {
     case "python 3":
       return `# LNMCBM Coding Competition - ${problemTitle || "Solution"}
 # Language: Python 3.11+
+# Note: Write pure top-level procedural logic (avoid def / try-except)
 import sys
 
-def solve():
-    # Read input from standard input
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
-    
+input_data = sys.stdin.read().split()
+if input_data:
     # Write your solution here
     pass
-
-if __name__ == '__main__':
-    solve()
 `;
 
     case "javascript":
     case "web development":
-      return `// LNMCBM Coding Competition - ${problemTitle || "Solution"}
-// Language: JavaScript / Node.js
-const fs = require('fs');
+    case "html":
+      return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${problemTitle || "Solution"}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Write your CSS styling here */
+  </style>
+</head>
+<body>
+  <!-- Write your HTML structure here -->
 
-function solve() {
-    const input = fs.readFileSync(0, 'utf-8').trim();
-    if (!input) return;
-
-    // Process input and output using console.log()
-    // Write your solution here
-}
-
-solve();
+  <script>
+    // Write your JavaScript event listeners here
+  </script>
+</body>
+</html>
 `;
 
     default:

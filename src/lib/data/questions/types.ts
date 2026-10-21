@@ -32,3 +32,4 @@ export interface OfficialMCQQuestion {
   correct_option: "A" | "B" | "C" | "D";
   explanation: string;
 }
+
