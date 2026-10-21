@@ -70,3 +70,4 @@ for (const prob of OFFICIAL_PHASE2_CODING_PROBLEMS) {
 
 fs.writeFileSync('supabase/migrations/20261021000002_seed_official_phase2_coding_problems.sql', sql, 'utf8');
 console.log('Migration generated successfully! File size:', sql.length, 'bytes');
+

@@ -10,11 +10,22 @@ export const dynamic = "force-dynamic";
  * Initializes or resumes the candidate's Phase 1 examination attempt.
  * Establishes the authoritative 45-minute countdown clock.
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const auth = await verifyStudent();
     if (!auth.authenticated) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    let track: string | undefined;
+    let language: string | undefined;
+
+    try {
+      const body = await request.json();
+      track = body?.track;
+      language = body?.language;
+    } catch {
+      // Body may be empty if resuming
     }
 
     // Verify candidate account is active
@@ -26,7 +37,7 @@ export async function POST() {
       );
     }
 
-    const examState = await startOrResumePhase1(auth.student.id);
+    const examState = await startOrResumePhase1(auth.student.id, track, language);
 
     return NextResponse.json({
       success: true,

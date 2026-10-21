@@ -30,6 +30,15 @@ import { ExamTerminationScreen } from "@/components/exam/ExamTerminationScreen";
 import { ExamWarningModal } from "@/components/exam/ExamWarningModal";
 import { ExamPreFlightNoticeModal } from "@/components/exam/ExamPreFlightNoticeModal";
 
+const COMPETITION_TRACKS = [
+  { id: "C", name: "Track A: C Programming", lang: "C", desc: "Core C language, pointers, memory, preprocessor directives & standard libraries." },
+  { id: "C++", name: "Track B: C++ Programming", lang: "C++", desc: "Object-oriented C++, STL containers, algorithms, templates & modern idioms." },
+  { id: "Java", name: "Track C: Java Programming", lang: "Java", desc: "Core Java, OOP principles, collections framework, exception handling & JVM memory." },
+  { id: "Python", name: "Track D: Python Programming", lang: "Python", desc: "Pythonic idioms, built-in data structures, comprehensions, OOP & standard libraries." },
+  { id: "Web Development", name: "Track E: Web Development", lang: "JavaScript", desc: "Modern frontend & full-stack essentials: HTML5, CSS3, DOM manipulation, JS & APIs." },
+  { id: "DSA", name: "Track F: Data Structures & Algorithms", lang: "DSA", desc: "Arrays, Linked Lists, Stacks, Queues, Trees, Graphs, Sorting & Dynamic Programming." },
+];
+
 export default function Phase1ExaminationPage() {
   const router = useRouter();
 
@@ -74,6 +83,14 @@ export default function Phase1ExaminationPage() {
   // Mobile Question Palette Drawer
   const [mobilePaletteOpen, setMobilePaletteOpen] = React.useState(false);
 
+  // Track & Language State
+  const [currentTrack, setCurrentTrack] = React.useState<string>("C");
+  const [currentLang, setCurrentLang] = React.useState<string | null>(null);
+  const [showTrackSelectModal, setShowTrackSelectModal] = React.useState(false);
+  const [tempTrack, setTempTrack] = React.useState<string>("C");
+  const [tempDsaLang, setTempDsaLang] = React.useState<"C" | "C++" | "Java">("C++");
+  const [switchingTrack, setSwitchingTrack] = React.useState(false);
+
   // Initialize or resume examination
   const initExam = React.useCallback(async () => {
     try {
@@ -101,6 +118,13 @@ export default function Phase1ExaminationPage() {
         return;
       }
 
+      const activeTrackFromData = data.track || data.session?.phase2_category || "C";
+      const activeLangFromData = data.language || data.session?.phase2_language || null;
+      setCurrentTrack(activeTrackFromData);
+      setCurrentLang(activeLangFromData);
+      setTempTrack(activeTrackFromData);
+      if (activeLangFromData) setTempDsaLang(activeLangFromData as any);
+
       setStudentInfo(data.student);
       setQuestions(data.questions || []);
       setAnswers(data.answers || {});
@@ -127,6 +151,29 @@ export default function Phase1ExaminationPage() {
   React.useEffect(() => {
     initExam();
   }, [initExam]);
+
+  const handleSwitchTrack = async (targetTrack: string, targetLang?: string | null) => {
+    setSwitchingTrack(true);
+    try {
+      const res = await fetch("/api/student/exam/change-track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ track: targetTrack, language: targetLang }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data.error || "Failed to switch language track.");
+        return;
+      }
+      setShowTrackSelectModal(false);
+      setCurrentIndex(0);
+      await initExam();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Error switching track.");
+    } finally {
+      setSwitchingTrack(false);
+    }
+  };
 
   // Server-Authoritative Timer Loop
   React.useEffect(() => {
@@ -491,6 +538,30 @@ export default function Phase1ExaminationPage() {
               Phase 1: Technical &amp; MCQ Assessment
             </p>
           </div>
+        </div>
+
+        {/* Active Language Track Pill */}
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-blue-950/70 border border-blue-800 text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 font-medium hidden sm:inline">Track:</span>
+            <span className="font-bold text-blue-200">
+              {currentTrack === "Web Development" ? "Web Dev" : currentTrack}
+              {currentTrack === "DSA" && currentLang && ` (${currentLang})`}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setTempTrack(currentTrack || "C");
+              if (currentLang && (currentLang === "C" || currentLang === "C++" || currentLang === "Java")) {
+                setTempDsaLang(currentLang as any);
+              }
+              setShowTrackSelectModal(true);
+            }}
+            className="ml-1 text-[10px] text-blue-400 hover:text-white underline font-semibold cursor-pointer"
+          >
+            Switch
+          </button>
         </div>
 
         {/* Server Authoritative Timer & Status Badges */}
@@ -907,6 +978,104 @@ export default function Phase1ExaminationPage() {
         durationMinutes={45}
         onConfirmAndEnterFullscreen={requestFullscreen}
       />
+
+      {/* TRACK SWITCHING / SELECTION MODAL */}
+      {showTrackSelectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>Choose Your Language Track</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Select the domain for your Phase 1 (40 MCQs) and Phase 2 (Coding) assessment. Switching tracks resets your Phase 1 MCQ answers for the new track.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[50vh] overflow-y-auto pr-1">
+              {COMPETITION_TRACKS.map((t) => {
+                const isSelected = tempTrack === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTempTrack(t.id)}
+                    className={`text-left p-3 rounded-xl border transition-all ${
+                      isSelected
+                        ? "bg-blue-950/60 border-blue-500 shadow-md ring-1 ring-blue-500"
+                        : "bg-slate-950/60 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-bold ${isSelected ? "text-blue-300" : "text-white"}`}>
+                        {t.name}
+                      </span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{t.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {tempTrack === "DSA" && (
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                <label className="text-[11px] font-bold text-slate-300 block">
+                  Select Coding Implementation Language for DSA:
+                </label>
+                <div className="flex gap-2">
+                  {(["C", "C++", "Java"] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => setTempDsaLang(lang)}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold border ${
+                        tempDsaLang === lang
+                          ? "bg-blue-600 border-blue-500 text-white"
+                          : "bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-600"
+                      }`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTrackSelectModal(false)}
+                disabled={switchingTrack}
+                className="text-xs border-slate-700 text-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  handleSwitchTrack(
+                    tempTrack,
+                    tempTrack === "DSA" ? tempDsaLang : tempTrack === "Web Development" ? "JavaScript" : tempTrack
+                  )
+                }
+                disabled={switchingTrack}
+                className="text-xs bg-blue-600 hover:bg-blue-500 font-bold text-white"
+              >
+                {switchingTrack ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Switching Track...
+                  </>
+                ) : (
+                  "Confirm Language Track"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FULLSCREEN / INTEGRITY WARNING MODAL */}
       <ExamWarningModal

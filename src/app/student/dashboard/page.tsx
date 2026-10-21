@@ -27,6 +27,57 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+const COMPETITION_TRACKS = [
+  {
+    id: "C",
+    name: "Track A: C Programming",
+    subtitle: "C11 • Pointers • Memory",
+    desc: "40 C MCQs in Phase 1 + 2 C Coding Problems in Phase 2",
+    badge: "Core Track",
+    badgeColor: "bg-blue-100 text-blue-800 border-blue-300",
+  },
+  {
+    id: "C++",
+    name: "Track B: C++ Programming",
+    subtitle: "C++17 • Classes • OOP",
+    desc: "40 C++ MCQs in Phase 1 + 2 C++ OOP Challenges in Phase 2",
+    badge: "OOP Track",
+    badgeColor: "bg-purple-100 text-purple-800 border-purple-300",
+  },
+  {
+    id: "Java",
+    name: "Track C: Java Programming",
+    subtitle: "OpenJDK 21 • Core Java",
+    desc: "40 Java MCQs in Phase 1 + 2 Java Challenges in Phase 2",
+    badge: "Core Java",
+    badgeColor: "bg-amber-100 text-amber-800 border-amber-300",
+  },
+  {
+    id: "Python",
+    name: "Track D: Python Programming",
+    subtitle: "Python 3.11+ • Procedural Logic",
+    desc: "40 Python MCQs in Phase 1 + 2 Python Procedural Problems in Phase 2",
+    badge: "Python Logic",
+    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  },
+  {
+    id: "Web Development",
+    name: "Track E: Web Development",
+    subtitle: "HTML5 • CSS3 • Vanilla JS",
+    desc: "40 Web Dev MCQs in Phase 1 + 2 UI/DOM Component Challenges in Phase 2",
+    badge: "Frontend Track",
+    badgeColor: "bg-sky-100 text-sky-800 border-sky-300",
+  },
+  {
+    id: "DSA",
+    name: "Track F: Algorithms (DSA)",
+    subtitle: "Two-Pointers • Binary Search",
+    desc: "40 DSA MCQs in Phase 1 + 2 DSA Problems (in C, C++, or Java)",
+    badge: "Core Challenge",
+    badgeColor: "bg-indigo-100 text-indigo-800 border-indigo-300",
+  },
+];
+
 export default function StudentDashboardPage() {
   const router = useRouter();
 
@@ -53,6 +104,12 @@ export default function StudentDashboardPage() {
   const [showInstructionsModal, setShowInstructionsModal] = React.useState(false);
   const [rulesAcknowledged, setRulesAcknowledged] = React.useState(false);
 
+  // Language Track Selection
+  const [selectedTrack, setSelectedTrack] = React.useState<string>("C");
+  const [selectedDsaLang, setSelectedDsaLang] = React.useState<"C" | "C++" | "Java">("C++");
+  const [activeTrack, setActiveTrack] = React.useState<string | null>(null);
+  const [activeLang, setActiveLang] = React.useState<string | null>(null);
+
   // Fetch candidate profile and current exam status
   const loadDashboardData = React.useCallback(async () => {
     try {
@@ -74,6 +131,14 @@ export default function StudentDashboardPage() {
         const sessionData = await sessionRes.json();
         if (sessionData.session) {
           setSessionStatus(sessionData.session.status);
+          if (sessionData.session.phase2_category) {
+            setActiveTrack(sessionData.session.phase2_category);
+            setSelectedTrack(sessionData.session.phase2_category);
+          }
+          if (sessionData.session.phase2_language) {
+            setActiveLang(sessionData.session.phase2_language);
+            setSelectedDsaLang(sessionData.session.phase2_language as any);
+          }
           if (sessionData.remainingSeconds !== undefined) {
             setRemainingSeconds(sessionData.remainingSeconds);
           }
@@ -93,13 +158,27 @@ export default function StudentDashboardPage() {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  // Handle starting / resuming Phase 1
+  // Handle starting / resuming Phase 1 with chosen language track
   const handleLaunchPhase1 = async () => {
     try {
       setStarting(true);
       setError(null);
 
-      const res = await fetch("/api/student/exam/start", { method: "POST" });
+      const targetLanguage =
+        selectedTrack === "DSA"
+          ? selectedDsaLang
+          : selectedTrack === "Web Development"
+          ? "JavaScript"
+          : selectedTrack;
+
+      const res = await fetch("/api/student/exam/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          track: selectedTrack,
+          language: targetLanguage,
+        }),
+      });
       const data = await res.json();
 
       if (!res.ok) {
@@ -254,10 +333,10 @@ export default function StudentDashboardPage() {
             {sessionStatus === "not_started" && (
               <Button
                 variant="primary"
-                className="w-full text-xs font-bold py-2.5 shadow-sm"
+                className="w-full text-xs font-bold py-2.5 shadow-sm bg-blue-600 hover:bg-blue-700"
                 onClick={() => setShowInstructionsModal(true)}
               >
-                Review Instructions & Start Phase 1
+                Select Language Track &amp; Start Phase 1
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
             )}
@@ -273,6 +352,22 @@ export default function StudentDashboardPage() {
                     {Math.floor(remainingSeconds / 60)}m {remainingSeconds % 60}s left
                   </span>
                 </div>
+
+                {activeTrack && (
+                  <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-900">
+                    <span>
+                      Active Track: <strong>{activeTrack}</strong> {activeLang ? `(${activeLang})` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowInstructionsModal(true)}
+                      className="text-[11px] font-bold text-blue-700 hover:underline cursor-pointer"
+                    >
+                      Change Track
+                    </button>
+                  </div>
+                )}
+
                 <Button
                   variant="primary"
                   className="w-full text-xs font-bold py-2.5 bg-amber-600 hover:bg-amber-700 border-amber-600 text-white"
@@ -468,7 +563,77 @@ export default function StudentDashboardPage() {
               </div>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto text-xs text-slate-700 leading-relaxed">
+            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto text-xs text-slate-700 leading-relaxed">
+              {/* STEP 1: TRACK & LANGUAGE SELECTION */}
+              <div className="p-4 bg-slate-900 text-slate-100 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-sm font-bold text-white">
+                      Step 1: Choose Your Examination Track &amp; Language
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
+                    Mandatory
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  Select your competition track. Your selection determines your <strong>40 Phase 1 MCQs</strong> and your <strong>Phase 2 Coding Challenges</strong>.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                  {COMPETITION_TRACKS.map((t) => {
+                    const isSelected = selectedTrack === t.id;
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => setSelectedTrack(t.id)}
+                        className={`p-3 rounded-lg border text-left cursor-pointer transition-all relative ${
+                          isSelected
+                            ? "bg-blue-950 border-blue-400 ring-2 ring-blue-500/40 shadow-sm"
+                            : "bg-slate-950/80 border-slate-800 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-xs font-bold text-white">{t.name}</span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${t.badgeColor}`}>
+                            {t.badge}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          {t.desc}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Sub-selector for DSA implementation language */}
+                {selectedTrack === "DSA" && (
+                  <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-2 mt-2">
+                    <span className="text-[11px] font-bold text-blue-400 block">
+                      Choose Your DSA Implementation Language:
+                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["C", "C++", "Java"] as const).map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setSelectedDsaLang(lang)}
+                          className={`p-2 rounded text-xs font-bold border transition-colors ${
+                            selectedDsaLang === lang
+                              ? "bg-blue-600 border-blue-500 text-white"
+                              : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800"
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Distribution Breakdown */}
               <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
                 <div className="font-bold text-blue-900 flex items-center gap-1.5">
@@ -530,7 +695,7 @@ export default function StudentDashboardPage() {
                     className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 mt-0.5"
                   />
                   <span className="text-xs font-semibold text-slate-900">
-                    I confirm that I have read, understood, and agree to strictly abide by the LNMCBM examination rules, academic honor code, and proctoring policies.
+                    I confirm my selection of <strong className="text-blue-700">{COMPETITION_TRACKS.find(t => t.id === selectedTrack)?.name}</strong> {selectedTrack === "DSA" ? `(${selectedDsaLang})` : ""}. I have read, understood, and agree to strictly abide by all LNMCBM examination rules.
                   </span>
                 </label>
               </div>
@@ -561,7 +726,7 @@ export default function StudentDashboardPage() {
                   </>
                 ) : (
                   <>
-                    Confirm &amp; Begin Phase 1 Exam
+                    Confirm &amp; Begin {selectedTrack} Exam
                     <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                   </>
                 )}

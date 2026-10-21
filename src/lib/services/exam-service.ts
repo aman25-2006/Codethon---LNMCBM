@@ -124,6 +124,8 @@ export interface StudentExamSessionState {
     markedForReview: number;
     total: number;
   };
+  track?: string;
+  language?: string | null;
 }
 
 declare global {
@@ -282,12 +284,23 @@ export async function getStudentSession(studentId: string): Promise<ExamSessionR
  * 1. Timer idempotency: Repeated calls or browser refreshes NEVER reset the 45-minute deadline.
  * 2. Inactive account or terminated session rejection.
  * 3. Already completed Phase 1 detection.
+ * 4. Language track assignment (C, C++, Java, Python, Web Development, DSA).
  */
-export async function startOrResumePhase1(studentId: string): Promise<StudentExamSessionState> {
+export async function startOrResumePhase1(
+  studentId: string,
+  requestedTrack?: string,
+  requestedLanguage?: string
+): Promise<StudentExamSessionState> {
   const now = new Date();
   const nowIso = now.toISOString();
 
   let session = await getStudentSession(studentId);
+
+  const selectedTrack = requestedTrack || session?.phase2_category || "C";
+  const selectedLang =
+    requestedLanguage ||
+    session?.phase2_language ||
+    (selectedTrack === "Web Development" ? "JavaScript" : selectedTrack);
 
   if (!session) {
     // Create new exam session
@@ -315,6 +328,8 @@ export async function startOrResumePhase1(studentId: string): Promise<StudentExa
           status: "phase1_in_progress",
           phase1_started_at: nowIso,
           phase1_expires_at: expiresAt,
+          phase2_category: selectedTrack,
+          phase2_language: selectedLang,
           last_activity_at: nowIso,
         })
         .select()
@@ -334,8 +349,8 @@ export async function startOrResumePhase1(studentId: string): Promise<StudentExa
         phase1_started_at: nowIso,
         phase1_expires_at: expiresAt,
         phase1_submitted_at: null,
-        phase2_category: null,
-        phase2_language: null,
+        phase2_category: selectedTrack,
+        phase2_language: selectedLang,
         phase2_started_at: null,
         phase2_expires_at: null,
         phase2_submitted_at: null,
@@ -363,6 +378,32 @@ export async function startOrResumePhase1(studentId: string): Promise<StudentExa
       // Auto-submit expired Phase 1
       await submitPhase1Exam(studentId);
       session = (await getStudentSession(studentId))!;
+    } else if (
+      requestedTrack &&
+      session.status === "phase1_in_progress" &&
+      session.phase2_category !== requestedTrack
+    ) {
+      // Candidate specifically updated their chosen track
+      session.phase2_category = requestedTrack;
+      session.phase2_language = selectedLang;
+
+      if (isSupabaseLive()) {
+        const admin = createAdminClient();
+        await admin
+          .from("exam_sessions")
+          .update({
+            phase2_category: requestedTrack,
+            phase2_language: selectedLang,
+            last_activity_at: nowIso,
+          })
+          .eq("id", session.id);
+
+        // Delete any old answers for mismatched questions if track changed
+        await admin.from("mcq_answers").delete().eq("session_id", session.id);
+      } else {
+        const store = getLocalAnswersStore();
+        store[session.id] = {};
+      }
     }
   }
 
@@ -392,8 +433,14 @@ export async function getFullStudentExamState(
     session.status = "phase1_completed";
   }
 
-  // Fetch deterministic student-safe questions (answer keys strictly excluded)
-  const examPayload = await getDeterministicExamQuestions(studentId, { shuffleOptions: true });
+  // Authoritative track for candidate
+  const activeTrack = session.phase2_category || "C";
+
+  // Fetch deterministic student-safe questions (answer keys strictly excluded) for the active track
+  const examPayload = await getDeterministicExamQuestions(studentId, {
+    shuffleOptions: true,
+    track: activeTrack,
+  });
 
   // Fetch saved candidate answers
   const answersMap: Record<string, SavedCandidateAnswer> = {};
@@ -447,6 +494,8 @@ export async function getFullStudentExamState(
       markedForReview: markedCount,
       total: examPayload.questions.length,
     },
+    track: activeTrack,
+    language: session.phase2_language,
   };
 }
 

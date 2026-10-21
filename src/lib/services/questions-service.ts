@@ -233,10 +233,58 @@ export async function getQuestions(params?: {
 
     const { data, error } = await query;
     if (error) {
-      throw new Error(`Failed to query question bank: ${error.message}`);
+      console.warn(`Supabase question query error: ${error.message}, using fallback.`);
     }
 
-    const formatted: MCQQuestionRecord[] = (data || []).map((row: any) => ({
+    let rawRows = data || [];
+
+    // Safety fallback: If database has no questions for requested track, load from official bank
+    if (rawRows.length === 0 && track && track !== "ALL") {
+      const localFallback = getQuestionsByTrack(track);
+      const formattedFallback: MCQQuestionRecord[] = localFallback.map((q, idx) => {
+        const qId = `mcq-${q.track.toLowerCase().replace(/[^a-z0-9]/g, "")}-q${q.q_number}-${idx + 1}`;
+        const optAId = `${qId}-opt-A`;
+        const optBId = `${qId}-opt-B`;
+        const optCId = `${qId}-opt-C`;
+        const optDId = `${qId}-opt-D`;
+        const correctOptId =
+          q.correct_option === "A"
+            ? optAId
+            : q.correct_option === "B"
+            ? optBId
+            : q.correct_option === "C"
+            ? optCId
+            : optDId;
+
+        return {
+          id: qId,
+          competition_id: null,
+          track: q.track,
+          category: q.category,
+          question_text: q.question_text,
+          code_snippet: q.code_snippet || null,
+          case_study_passage: q.case_study_passage || null,
+          marks: q.marks,
+          is_active: true,
+          options: [
+            { id: optAId, question_id: qId, option_key: "A" as const, option_text: q.options.A },
+            { id: optBId, question_id: qId, option_key: "B" as const, option_text: q.options.B },
+            { id: optCId, question_id: qId, option_key: "C" as const, option_text: q.options.C },
+            { id: optDId, question_id: qId, option_key: "D" as const, option_text: q.options.D },
+          ],
+          correct_option_key: q.correct_option,
+          correct_option_id: correctOptId,
+          explanation: q.explanation,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+      const metrics = calculateMetrics(formattedFallback, track);
+      return { questions: formattedFallback, metrics };
+    }
+
+    const formatted: MCQQuestionRecord[] = rawRows.map((row: any) => ({
       id: row.id,
       competition_id: row.competition_id,
       track: row.track || "C",

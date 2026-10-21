@@ -9,6 +9,7 @@
  */
 
 import { getQuestions, StudentSafeQuestion, MCQQuestionRecord } from "./questions-service";
+import { getQuestionsByTrack } from "@/lib/data/questions";
 
 /**
  * 32-bit FNV-1a hash algorithm to produce an integer seed from any string.
@@ -82,16 +83,67 @@ export async function getDeterministicExamQuestions(
 
   if (targetTrack && targetTrack !== "ALL") {
     activeQuestions = activeQuestions.filter(
-      (q) => !q.track || q.track.toLowerCase() === targetTrack.toLowerCase()
+      (q) => q.track && q.track.toLowerCase() === targetTrack.toLowerCase()
     );
-  } else if (activeQuestions.length > 40) {
-    // Default to track C when no track is specified
-    const cTrack = activeQuestions.filter((q) => q.track === "C");
-    if (cTrack.length === 40) {
-      activeQuestions = cTrack;
-    } else {
-      activeQuestions = activeQuestions.slice(0, 40);
+    if (activeQuestions.length < 40) {
+      const fallbackList = getQuestionsByTrack(targetTrack);
+      activeQuestions = fallbackList.map((q, idx) => {
+        const qId = `mcq-${q.track.toLowerCase().replace(/[^a-z0-9]/g, "")}-q${q.q_number}-${idx + 1}`;
+        return {
+          id: qId,
+          competition_id: null,
+          track: q.track,
+          category: q.category,
+          question_text: q.question_text,
+          code_snippet: q.code_snippet || null,
+          case_study_passage: q.case_study_passage || null,
+          marks: q.marks,
+          is_active: true,
+          options: [
+            { id: `${qId}-A`, question_id: qId, option_key: "A" as const, option_text: q.options.A },
+            { id: `${qId}-B`, question_id: qId, option_key: "B" as const, option_text: q.options.B },
+            { id: `${qId}-C`, question_id: qId, option_key: "C" as const, option_text: q.options.C },
+            { id: `${qId}-D`, question_id: qId, option_key: "D" as const, option_text: q.options.D },
+          ],
+          correct_option_key: q.correct_option,
+          explanation: q.explanation,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      });
     }
+  } else {
+    // Default to track C when no track is specified
+    const cFallback = getQuestionsByTrack("C");
+    activeQuestions = cFallback.map((q, idx) => {
+      const qId = `mcq-${q.track.toLowerCase().replace(/[^a-z0-9]/g, "")}-q${q.q_number}-${idx + 1}`;
+      return {
+        id: qId,
+        competition_id: null,
+        track: q.track,
+        category: q.category,
+        question_text: q.question_text,
+        code_snippet: q.code_snippet || null,
+        case_study_passage: q.case_study_passage || null,
+        marks: q.marks,
+        is_active: true,
+        options: [
+          { id: `${qId}-A`, question_id: qId, option_key: "A" as const, option_text: q.options.A },
+          { id: `${qId}-B`, question_id: qId, option_key: "B" as const, option_text: q.options.B },
+          { id: `${qId}-C`, question_id: qId, option_key: "C" as const, option_text: q.options.C },
+          { id: `${qId}-D`, question_id: qId, option_key: "D" as const, option_text: q.options.D },
+        ],
+        correct_option_key: q.correct_option,
+        explanation: q.explanation,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    });
+  }
+
+  // Ensure exactly 40 questions per track
+  if (activeQuestions.length > 40) {
+    activeQuestions = activeQuestions.slice(0, 40);
   }
 
   // Group questions by category so we can either shuffle within categories or across the entire exam

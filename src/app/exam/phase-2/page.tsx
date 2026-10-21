@@ -66,6 +66,8 @@ export default function Phase2ExamWorkspacePage() {
   // Track Selection State
   const [selectedCategory, setSelectedCategory] = React.useState<CodingCategory>("Python");
   const [selectedDsaLanguage, setSelectedDsaLanguage] = React.useState<DSALanguage>("C++");
+  const [phase1Track, setPhase1Track] = React.useState<string | null>(null);
+  const [phase1Language, setPhase1Language] = React.useState<string | null>(null);
   const [confirmedReady, setConfirmedReady] = React.useState(false);
 
   // Active / Locked Phase 2 State
@@ -134,6 +136,22 @@ export default function Phase2ExamWorkspacePage() {
 
       setSessionStatus(session.status);
       setWarningsCount(session.fullscreen_warnings_count || 0);
+
+      // Pre-populate with candidate's track from Phase 1 or prior selection
+      if (session.phase2_category) {
+        setPhase1Track(session.phase2_category);
+        setSelectedCategory(session.phase2_category as CodingCategory);
+      }
+      if (session.phase2_language) {
+        setPhase1Language(session.phase2_language);
+        if (
+          session.phase2_language === "C" ||
+          session.phase2_language === "C++" ||
+          session.phase2_language === "Java"
+        ) {
+          setSelectedDsaLanguage(session.phase2_language as DSALanguage);
+        }
+      }
 
       // 2. Fetch category configurations
       const catRes = await fetch("/api/student/exam/phase2/categories");
@@ -631,6 +649,28 @@ export default function Phase2ExamWorkspacePage() {
               Select the language or domain you wish to be evaluated in for Phase 2. Once confirmed, you will be assigned 2 domain-specific programming challenges with 30 minutes to complete.
             </p>
           </div>
+
+          {phase1Track && (
+            <div className="p-4 bg-blue-950/40 border border-blue-800/60 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold">
+                  ✓
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <span>Phase 1 Track Selected:</span>
+                    <Badge variant="default" className="bg-blue-600 text-white font-mono text-[11px]">
+                      {phase1Track}
+                      {phase1Track === "DSA" && phase1Language ? ` (${phase1Language})` : ""}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Your coding track is pre-selected to match your Phase 1 track. You may keep this or switch tracks below before clicking Start.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Category Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

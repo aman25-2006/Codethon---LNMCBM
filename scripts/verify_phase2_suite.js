@@ -100,3 +100,4 @@ runVerification().catch((err) => {
   console.error('\nVERIFICATION FAILED:', err);
   process.exit(1);
 });
+
