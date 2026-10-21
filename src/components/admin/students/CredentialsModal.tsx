@@ -155,8 +155,8 @@ export function CredentialsModal({
                   {singleResult.emailStatus === "accepted" || singleResult.emailStatus === "delivered"
                     ? `Invitation email dispatched to ${singleResult.email}`
                     : singleResult.emailStatus === "provider_not_configured"
-                    ? "Resend API key unconfigured (logged to dev outbox)"
-                    : "Email dispatch pending or skipped"}
+                    ? "Email transport unconfigured (set GMAIL_APP_PASSWORD in Vercel)"
+                    : singleResult.errorMessage || "Email dispatch failed or skipped"}
                 </p>
               </div>
 

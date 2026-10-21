@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 export interface StudentEmailPayload {
   studentName: string;
@@ -196,8 +197,63 @@ Lalit Narayan Mishra College of Business Management
 </html>
 `.trim();
 
+  const gmailPass =
+    process.env.GMAIL_APP_PASSWORD ||
+    process.env.EMAIL_PASSWORD ||
+    process.env.EMAIL_PASS ||
+    process.env.SMTP_PASSWORD ||
+    process.env.SMTP_PASS;
+
+  const gmailUser =
+    process.env.GMAIL_USER ||
+    process.env.EMAIL_USER ||
+    "lnmcbmhackathoncell@gmail.com";
+
+  const fromAddress =
+    process.env.EMAIL_FROM ||
+    `"LNMCBM Hackathon Cell" <${gmailUser}>`;
+
   // ----------------------------------------------------------------------------
-  // Case A: Resend API Key Configured
+  // Case A: Gmail SMTP Transport (Sends directly from lnmcbmhackathoncell@gmail.com)
+  // ----------------------------------------------------------------------------
+  if (gmailPass && gmailPass.trim()) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: gmailUser.trim(),
+          pass: gmailPass.trim().replace(/\s+/g, ""),
+        },
+      });
+
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to: email,
+        subject,
+        text: textContent,
+        html: htmlContent,
+      });
+
+      return {
+        success: true,
+        status: "delivered",
+        messageId: info.messageId || `gmail-${Date.now()}`,
+      };
+    } catch (err: unknown) {
+      console.error("Gmail SMTP dispatch error:", err);
+      const errMsg = err instanceof Error ? err.message : "SMTP transport error.";
+      return {
+        success: false,
+        status: "failed",
+        error: errMsg.includes("Invalid login")
+          ? "Gmail authentication failed. Please check GMAIL_APP_PASSWORD in Vercel (requires a 16-character Google App Password with 2FA enabled on lnmcbmhackathoncell@gmail.com)."
+          : errMsg,
+      };
+    }
+  }
+
+  // ----------------------------------------------------------------------------
+  // Case B: Resend API Key Configured (Alternative Provider)
   // ----------------------------------------------------------------------------
   if (isResendConfigured) {
     try {
@@ -237,7 +293,7 @@ Lalit Narayan Mishra College of Business Management
   }
 
   // ----------------------------------------------------------------------------
-  // Case B: Resend API Key Unconfigured (Safe development fallback)
+  // Case C: Neither Gmail SMTP nor Resend Configured (Safe Simulation)
   // Transparently records attempt without pretending external delivery occurred.
   // ----------------------------------------------------------------------------
   const outbox = getSimulatedOutbox();
@@ -258,7 +314,8 @@ Lalit Narayan Mishra College of Business Management
     status: "provider_not_configured",
     messageId: simulatedId,
     simulated: true,
-    error: "Transactional email provider (Resend) is not configured. Set RESEND_API_KEY in .env.local to deliver to external inboxes.",
+    error:
+      "Gmail App Password not set. Please add GMAIL_APP_PASSWORD in your Vercel Environment Variables for lnmcbmhackathoncell@gmail.com.",
   };
 }
 
