@@ -218,13 +218,26 @@ Lalit Narayan Mishra College of Business Management
   // ----------------------------------------------------------------------------
   if (gmailPass && gmailPass.trim()) {
     try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: gmailUser.trim(),
-          pass: gmailPass.trim().replace(/\s+/g, ""),
-        },
-      });
+      const isCustomSmtp = Boolean(process.env.SMTP_HOST);
+      const transporter = nodemailer.createTransport(
+        isCustomSmtp
+          ? {
+              host: process.env.SMTP_HOST,
+              port: Number(process.env.SMTP_PORT) || 587,
+              secure: process.env.SMTP_PORT === "465",
+              auth: {
+                user: (process.env.SMTP_USER || gmailUser).trim(),
+                pass: gmailPass.trim().replace(/\s+/g, ""),
+              },
+            }
+          : {
+              service: "gmail",
+              auth: {
+                user: gmailUser.trim(),
+                pass: gmailPass.trim().replace(/\s+/g, ""),
+              },
+            }
+      );
 
       const info = await transporter.sendMail({
         from: fromAddress,
