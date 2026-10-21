@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const headers = [
+    "track",
     "category",
     "question",
     "option_a",
@@ -23,6 +24,7 @@ export async function GET() {
 
   const sampleRows = [
     [
+      "DSA",
       "Fundamentals",
       "Which data structure operates on a Last-In, First-Out (LIFO) order?",
       "Queue",
@@ -36,6 +38,7 @@ export async function GET() {
       "",
     ],
     [
+      "DSA",
       "Technical Understanding",
       "What is the average time complexity of searching in a balanced Binary Search Tree?",
       "O(1)",

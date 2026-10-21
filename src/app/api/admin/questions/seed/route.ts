@@ -17,20 +17,23 @@ export async function POST(request: Request) {
     }
 
     let reset = false;
+    let trackParam: string | undefined = undefined;
     try {
       const url = new URL(request.url);
+      trackParam = url.searchParams.get("track") || undefined;
       if (url.searchParams.get("reset") === "true") {
         reset = true;
       } else {
         const body = await request.json().catch(() => ({}));
         if (body?.reset) reset = true;
+        if (body?.track) trackParam = body.track;
       }
     } catch {
       // no-op
     }
 
-    const result = await preloadOfficialSeedQuestions({ reset });
-    const { metrics } = await getQuestions();
+    const result = await preloadOfficialSeedQuestions({ reset, track: trackParam });
+    const { metrics } = await getQuestions({ track: trackParam });
 
     await logAuditEvent({
       actorId: auth.user.id,

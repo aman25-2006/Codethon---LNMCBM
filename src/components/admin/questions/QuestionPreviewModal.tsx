@@ -45,6 +45,11 @@ export function QuestionPreviewModal({
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
           {/* Metadata badges */}
           <div className="flex flex-wrap items-center gap-2">
+            {question.track && (
+              <Badge variant="outline" className="font-bold text-blue-700 bg-blue-50 border-blue-200">
+                Track: {question.track}
+              </Badge>
+            )}
             <Badge variant="outline" className="font-semibold text-slate-700 bg-slate-50">
               {question.category}
             </Badge>

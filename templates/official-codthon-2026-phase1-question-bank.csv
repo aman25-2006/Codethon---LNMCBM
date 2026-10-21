@@ -1,0 +1,534 @@
+track,category,question,option_a,option_b,option_c,option_d,correct_option,marks,explanation,case_study_passage,code_snippet
+C,Fundamentals,Which of the following header files must be included in a standard C program to use printf() and scanf() functions?,<stdlib.h>,<stdio.h>,<conio.h>,<string.h>,,1,,,
+C,Fundamentals,What is the standard format specifier used in C to read or print a double-precision floating-point number using printf() ?,%f,%lf,%d,%c,,1,,,
+C,Fundamentals,Which of the following is a VALID identifier name in C?,2nd_student,total$sum,_student_score,float,,1,,,
+C,Fundamentals,What is the default return type of the main() function in standard C according to the ISO C standard?,void,int,float,char,,1,,,
+C,Fundamentals,What does the dereference operator * do when applied to a pointer variable in C?,Returns the memory address where the pointer is stored,Multiplies the pointer by a scalar constant,Accesses or manipulates the value stored at the memory address pointed to,Allocates dynamic heap memory,,1,,,
+C,Fundamentals,Which operator in C is used to determine the memory address of an existing variable?,*,->,&,%,,1,,,
+C,Fundamentals,"In C, what is the mandatory sentinel character that terminates all standard character strings?",'\n',' ' (Space),'\0','EOF',,1,,,
+C,Fundamentals,What is the index of the very first element in an array of size N in the C programming language?,1,-1,0,N - 1,,1,,,
+C,Fundamentals,What is the result of evaluating the arithmetic expression 17 % 5 in C?,3.4,3,2,1,,1,,,
+C,Fundamentals,Which of the following standard string library functions is used to concatenate (append) one string to the end of another in C?,strcpy(),strcmp(),strcat(),strlen(),,1,,,
+C,Technical Understanding,"Consider the following integer variable declaration:
+int marks = 75;
+Which condition correctly tests if marks is between 60 and 80 inclusive?",60 <= marks <= 80,marks >= 60 || marks <= 80,marks >= 60 && marks <= 80,marks == (60 && 80),,2,,,int marks = 75;
+C,Technical Understanding,How many times will the body of the following do-while loop execute?,0 times,1 time,5 times,Infinite loop,,2,,,"int count = 5;
+do {
+    count++;
+} while (count < 5);"
+C,Technical Understanding,"In a C switch statement, what occurs if a matching case does not contain a break statement?",Compile-time syntax error,The program immediately exits the switch,Execution falls through to subsequent case blocks until a break or closing brace is reached,The default block executes immediately,,2,,,
+C,Technical Understanding,What is the return value of strcmp(\,Positive integer (> 0),Negative integer (< 0),0,Undefined behavior,,2,,,
+C,Technical Understanding,"Consider the following array declaration:
+int arr[5] = {10, 20, 30};
+What are the values of arr[3] and arr[4] in C?",Garbage values,10 and 20,0 and 0,Compile-time error,,2,,,"int arr[5] = {10, 20, 30};"
+C,Technical Understanding,What is the effect of the continue statement when encountered inside a for loop?,Terminates the loop immediately,Skips the rest of the current iteration and jumps directly to the update expression,Restarts the loop from the beginning,Exits the enclosing function,,2,,,
+C,Technical Understanding,"Consider the following code snippet:
+What is printed by this program?",30,20,0,Compilation error,,2,,,void compute(int val) {\n    val = val + 10;\n}\nint main() {\n    int x = 20;\n    compute(x);\n    printf(\
+C,Technical Understanding,What is the memory size allocated to a single char variable in standard C?,1 byte,2 bytes,4 bytes,8 bytes,,2,,,
+C,Technical Understanding,What is the output of the following C code snippet?,True b = 6,b = 6,b = 5,True b = 5,,2,,,"int a = 0, b = 5;\nif (a && ++b) {\n    printf(\"
+C,Technical Understanding,What will be printed by the following code?,y = 12,y = 11,y = 10,Undefined behavior in C standard,,2,,,int x = 5;\nint y = x++ + ++x;\nprintf(\
+C,Logic and Debugging,What is the output of the following C program?,4,10,6,15,,3,,,#include <stdio.h>\nint main() {\n    int sum = 0;\n    for (int i = 1; i <= 4; i++) {\n        sum += i;\n    }\n    printf(\
+C,Logic and Debugging,What is printed by the following C snippet?,2.4,2.0,2,2.5,,3,,,"int p = 12, q = 5;\nfloat res = p / q;\nprintf(\"
+C,Logic and Debugging,What is the output of the following pointer code?,40,15,55,Address of num,,3,,,#include <stdio.h>\nint main() {\n    int num = 40;\n    int *ptr = &num;\n    *ptr = *ptr + 15;\n    printf(\
+C,Logic and Debugging,What is printed by the following loop construct?,5,6,9,4,,3,,,int count = 0;\nfor (int i = 0; i < 3; i++) {\n    for (int j = 0; j < 2; j++) {\n        count++;\n    }\n}\nprintf(\
+C,Logic and Debugging,What is the output of the following string code?,Cod (len = 3),Codthon (len = 7),Codthon (len = 3),Cod (len = 7),,3,,,#include <stdio.h>\n#include <string.h>\nint main() {\n    char str[] = \
+C,Logic and Debugging,Identify the compile-time syntax error in the following function definition:,Parameter list must use semicolons,Variable prod must be global,"The function return type is int, but return; provides no value expression",Multiplication cannot be performed in functions,,3,,,"int multiply(int a, int b) {
+    int prod = a * b;
+    return;
+}"
+C,Logic and Debugging,What is the output of the following array processing loop?,3,4,9,7,,3,,,"int arr[] = {3, 7, 2, 9, 4};\nint max = arr[0];\nfor (int i = 1; i < 5; i++) {\n    if (arr[i] > max) {\n        max = arr[i];\n    }\n}\nprintf(\"
+C,Logic and Debugging,What will be printed by the following code?,A,A B,A B C D,B,,3,,,int k = 1;\nswitch (k) {\n    case 1: printf(\
+C,Logic and Debugging,What is the output of the following C program?,10,Equal 5,5,Compilation error,,3,,,"#include <stdio.h>\nint main() {\n    int a = 10, b = 20;\n    if (a = 5) {\n        printf(\"
+C,Logic and Debugging,What is the output of the following code involving pointers and arrays?,100,101,200,300,,3,,,"#include <stdio.h>\nint main() {\n    int vals[] = {100, 200, 300};\n    int *p = vals;\n    p++;\n    printf(\"
+C,Case Study,"[Scenario: Student Grading System] A college grading module assigns 'Pass' if a student scores at least 40 in theory and at least 20 in practical, otherwise 'Fail'. Which C statement accurately implements this logic?",if (theory >= 40 || practical >= 20) printf(\,if (theory >= 40 && practical >= 20) printf(\,if (theory + practical >= 60) printf(\,if (theory > 40 && practical > 20) printf(\,,2,,"Scenario: Student Grading System
+A college grading module assigns 'Pass' if a student scores at least 40 in theory and at least 20 in practical, otherwise 'Fail'.",
+C,Case Study,[Scenario: Supermarket Billing System] A store offers a 10% discount on total purchases exceeding 1000 rupees. Which snippet correctly computes final_bill ?,if (total > 1000) final_bill = total * 0.10;,if (total >= 1000) final_bill = total * 0.90; else final_bill = total;,if (total > 1000) final_bill = total * 0.90; else final_bill = total;,final_bill = total - 10;,,2,,"Scenario: Supermarket Billing System
+A store offers a 10% discount on total purchases exceeding 1000 rupees.",
+C,Case Study,[Scenario: Sensor Data Logging] An IoT temperature monitor records 7 daily readings in an array float temp[7] . Which code snippet correctly calculates the weekly average temperature?,float sum = 0; for (int i = 0; i <= 7; i++) sum += temp[i]; float avg = sum / 7;,float sum = 0; for (int i = 0; i < 7; i++) sum += temp[i]; float avg = sum / 7.0;,float avg = temp[0] + temp[6] / 2.0;,float sum = temp[7]; float avg = sum / 7;,,2,,"Scenario: Sensor Data Logging
+An IoT temperature monitor records 7 daily readings in an array float temp[7].",
+C,Case Study,[Scenario: Bank ATM Cash Dispenser] An ATM accepts withdrawal amount W only if W is a positive multiple of 100. Which condition properly validates W ?,if (W > 0 && W % 100 == 0),if (W > 0 || W / 100 == 0),if (W % 100 != 0),if (W >= 100 && W % 10 == 0),,2,,"Scenario: Bank ATM Cash Dispenser
+An ATM accepts withdrawal amount W only if W is a positive multiple of 100.",
+C,Case Study,[Scenario: Attendance Shortage Detector] A college regulation requires a student to maintain at least 75% attendance across total_classes . Which formula correctly checks if a student with attended classes is eligible?,if ((attended / total_classes) * 100 >= 75),if ((float)attended / total_classes >= 0.75),if (attended * 75 >= total_classes),if (attended >= 75),,2,,"Scenario: Attendance Shortage Detector
+A college regulation requires a student to maintain at least 75% attendance across total_classes.",
+C,Case Study,"[Scenario: Inventory Stock Counter] A warehouse system represents items in stock as positive numbers, out of stock as 0, and returned items as negative. A clerk wants to count how many items are currently in stock from an array int inv[N] . Which loop structure achieves this?",int count = 0; for(int i=0; i<N; i++) if(inv[i] >= 0) count++;,int count = 0; for(int i=0; i<N; i++) if(inv[i] > 0) count++;,int count = 0; for(int i=0; i<N; i++) if(inv[i] != 0) count++;,int count = N - inv[0];,,2,,"Scenario: Inventory Stock Counter
+A warehouse system represents items in stock as positive numbers, out of stock as 0, and returned items as negative. A clerk wants to count how many items are currently in stock from an array int inv[N].",
+C,Case Study,"[Scenario: User Password Length Validation] A registration portal requires the user's password to be between 8 and 16 characters inclusive. Given char pwd[50]; , which code segment correctly verifies this rule?",if (strlen(pwd) > 8 && strlen(pwd) < 16),if (sizeof(pwd) >= 8 && sizeof(pwd) <= 16),int len = strlen(pwd); if (len >= 8 && len <= 16),if (pwd >= 8 && pwd <= 16),,2,,"Scenario: User Password Length Validation
+A registration portal requires the user's password to be between 8 and 16 characters inclusive.",
+C,Case Study,[Scenario: Telecom Billing Minutes Rounding] A telecom provider charges per minute. Any partial minute of call duration (e.g. 61 seconds) is billed as a full extra minute (e.g. 2 minutes). Which integer arithmetic expression in C converts seconds into billed minutes?,minutes = seconds / 60;,minutes = (seconds + 59) / 60;,minutes = (seconds / 60) + 1;,minutes = seconds % 60;,,2,,"Scenario: Telecom Billing Minutes Rounding
+A telecom provider charges per minute. Any partial minute of call duration (e.g. 61 seconds) is billed as a full extra minute (e.g. 2 minutes).",
+C,Case Study,[Scenario: Vowel Counter in Customer Feedback] A technician writes a loop to count vowels in string char str[100] . What is the logical bug in the following snippet?,The loop condition causes an infinite loop,"Character constants like 'e' are non-zero truthy values, making the if condition always true for every character",vowels must be initialized to 1,Arrays cannot be indexed with i,,2,,"Scenario: Vowel Counter in Customer Feedback
+A technician writes a loop to count vowels in string char str[100].","int vowels = 0;
+for (int i = 0; str[i] != '\0'; i++) {
+    if (str[i] == 'a' || 'e' || 'i' || 'o' || 'u') {
+        vowels++;
+    }
+}"
+C,Case Study,[Scenario: Two-Variable Swapping Without Auxiliary Memory] A programmer needs to swap two integer variables x and y without declaring a third temporary variable. Which sequence of operations correctly performs the swap?,x = x * y; y = x * y; x = x * y;,x = x + y; y = x - y; x = x - y;,x = y; y = x;,x = x - y; y = y - x; x = x + y;,,2,,"Scenario: Two-Variable Swapping Without Auxiliary Memory
+A programmer needs to swap two integer variables x and y without declaring a third temporary variable.",
+C++,Fundamentals,Which standard header file in C++ is required to use the standard stream objects cin and cout ?,<stdio.h>,<iostream>,<conio.h>,<fstream>,,1,,,
+C++,Fundamentals,What is the primary purpose of the directive using namespace std; in a C++ source file?,Imports external dynamic link libraries,Allows standard library elements to be accessed without prefixing them with `std::`,Allocates memory on the stack,Enables object-oriented inheritance,,1,,,
+C++,Fundamentals,Which data type in C++ is specifically designed to store boolean truth values (true or false )?,int,bit,bool,boolean,,1,,,
+C++,Fundamentals,What is the insertion operator used in conjunction with cout to print output to the console?,>>,<<,→,::,,1,,,
+C++,Fundamentals,What is the default access specifier for members of a class in C++ if none is explicitly specified?,public,private,protected,internal,,1,,,
+C++,Fundamentals,Which special member function has the same name as the class and possesses NO return type (not even void )?,Destructor,Constructor,Friend function,Static method,,1,,,
+C++,Fundamentals,What OOP concept binds data members and member functions into a single unit while restricting direct outside access?,Inheritance,Polymorphism,Encapsulation,Dynamic Binding,,1,,,
+C++,Fundamentals,"In C++, which syntax correctly declares that class Derived publicly inherits from class Base ?",class Derived extends Base,class Derived : public Base,class Derived inherits Base,class Derived :: public Base,,1,,,
+C++,Fundamentals,What is 'function overloading' in C++?,Defining multiple functions with different names but identical parameters,"Defining two or more functions with the same name in the same scope, differing in parameter types or count",Calling a function repeatedly until stack overflow occurs,Overriding a base class function in a derived class,,1,,,
+C++,Fundamentals,"Which members of a base class are accessible to derived class member functions, but hidden from external non-member functions?",private members,protected members,public members,global members,,1,,,
+C++,Technical Understanding,"Consider the following string declaration in C++:
+Which expression returns the number of characters in string s ?",s.size() or s.length(),sizeof(s),s.count(),strlen(s),,2,,,string s = \
+C++,Technical Understanding,"What happens when an object of a class is created without arguments, assuming no constructors were defined by the programmer?",Compilation error occurs,The compiler automatically generates an implicit default constructor,The program crashes at runtime,The object is placed in read-only memory,,2,,,
+C++,Technical Understanding,"Consider the overloaded functions:
+What happens when show(4.5) is called?",Ambiguous call compile error,`show(double)` is invoked because 4.5 is a double literal,`show(int)` is invoked after truncating to 4,Both functions execute,,2,,,"void show(int x);
+void show(double x);"
+C++,Technical Understanding,"In single inheritance, in what order are constructors executed when an object of the derived class is created?","Derived class constructor first, then Base class constructor","Base class constructor first, then Derived class constructor",Only the Derived class constructor executes,Randomized order,,2,,,
+C++,Technical Understanding,What is the output of the following C++ code snippet?,3.75 3.75,3.75 3,3 3,3.0 3,,2,,,"#include <iostream>\nusing namespace std;\nint main() {\n    int a = 15, b = 4;\n    cout << (float)a / b << \"
+C++,Technical Understanding,What is printed when the following code executes?,Hello,World,Hello World,Hello,,2,,,#include <iostream>\n#include <string>\nusing namespace std;\nint main() {\n    string str1 = \
+C++,Technical Understanding,"Consider the following class definition:
+Which object declaration in main() is INVALID?",Student s1(101);,Student s2 = Student(102);,Student s3;,Student s4 = 104;,,2,,,"class Student {
+    int roll;
+public:
+    Student(int r) { roll = r; }
+};"
+C++,Technical Understanding,What is the key functional difference between break and continue inside a loop in C++?,"`break` skips to the next iteration, while `continue` terminates the entire loop","`break` terminates the enclosing loop entirely, while `continue` skips the rest of the current iteration and advances to the next iteration",Both statements perform identical actions,`continue` can only be used inside a switch statement,,2,,,
+C++,Technical Understanding,What is the output of the following C++ program?,D,B,B D,D B,,2,,,#include <iostream>\nusing namespace std;\nclass Base {\npublic:\n    Base() { cout << \
+C++,Technical Understanding,What is the result of attempting to compile and run the following C++ snippet?,20 20,10 20,10 10,Modifying a const object via cast invokes undefined behavior,,2,,,#include <iostream>\nusing namespace std;\nint main() {\n    const int x = 10;\n    int *ptr = (int*)&x;\n    *ptr = 20;\n    cout << x << \
+C++,Logic and Debugging,What is the output of the following C++ program?,15,6,9,12,,3,,,"#include <iostream>
+using namespace std;
+int main() {
+    int total = 0;
+    for (int i = 1; i <= 5; i++) {
+        if (i % 2 == 0) total += i;
+    }
+    cout << total;
+    return 0;
+}"
+C++,Logic and Debugging,What is the output of the following C++ code?,60,100,150,30,,3,,,"#include <iostream>
+using namespace std;
+int main() {
+    int arr[] = {10, 20, 30, 40, 50};
+    int sum = 0;
+    for (int i = 0; i < 3; i++) {
+        sum += arr[i];
+    }
+    cout << sum;
+    return 0;
+}"
+C++,Logic and Debugging,What will be printed by the following program?,50,25,75,Compile error,,3,,,"#include <iostream>
+using namespace std;
+void update(int &ref) {
+    ref += 25;
+}
+int main() {
+    int val = 50;
+    update(val);
+    cout << val;
+    return 0;
+}"
+C++,Logic and Debugging,What is the output of the following class-based program?,1,2,3,0,,3,,,"#include <iostream>
+using namespace std;
+class Counter {
+    int count;
+public:
+    Counter() { count = 1; }
+    void inc() { count++; }
+    int get() { return count; }
+};
+int main() {
+    Counter c;
+    c.inc();
+    c.inc();
+    cout << c.get();
+    return 0;
+}"
+C++,Logic and Debugging,What is the output of the following code snippet?,Four,Four Six,Four Six Default,Two Four,,3,,,#include <iostream>\nusing namespace std;\nint main() {\n    int x = 2;\n    switch (x * 2) {\n        case 2: cout << \
+C++,Logic and Debugging,Identify the compiler error in the following C++ code snippet:,`setData` cannot have parameters,`s.data` is private by default in class `Sample` and cannot be accessed in `main()`,`cout` cannot print integers,`Sample s;` requires parentheses,,3,,,"#include <iostream>
+using namespace std;
+class Sample {
+    int data;
+public:
+    void setData(int d) { data = d; }
+};
+int main() {
+    Sample s;
+    s.setData(100);
+    cout << s.data;
+    return 0;
+}"
+C++,Logic and Debugging,What is the output of the following array traversal program?,5 3 1,5 4 3 2 1,4 2 0,1 3 5,,3,,,"#include <iostream>\nusing namespace std;\nint main() {\n    int a[] = {1, 2, 3, 4, 5};\n    for (int i = 4; i >= 0; i -= 2) {\n        cout << a[i] << \"
+C++,Logic and Debugging,What is the output of the following function overloading program?,25,32,12,35,,3,,,"#include <iostream>
+using namespace std;
+int calc(int a) { return a * a; }
+int calc(int a, int b) { return a + b; }
+int main() {
+    cout << calc(5) + calc(3, 4);
+    return 0;
+}"
+C++,Logic and Debugging,What is printed by the following C++ code?,Max=10,Max=20,Max=0,Compile error,,3,,,#include <iostream>\nusing namespace std;\nint main() {\n    int x = 10;\n    int y = 20;\n    int z = (x > y) ? x : y;\n    cout << \
+C++,Logic and Debugging,What is the output of the following inheritance program?,30,20,10,Compile error,,3,,,"#include <iostream>
+using namespace std;
+class Parent {
+public:
+    int x;
+    Parent() { x = 10; }
+};
+class Child : public Parent {
+public:
+    int y;
+    Child() { y = 20; }
+};
+int main() {
+    Child c;
+    cout << c.x + c.y;
+    return 0;
+}"
+C++,Case Study,"[Scenario: Bank Account Encapsulation] A banking application models a bank account with balance . To prevent negative balances, which method
+implementation in class BankAccount correctly encapsulates withdrawals?",public: void withdraw(double amt) { balance -= amt; },public: bool withdraw(double amt) { if (amt > 0 && amt <= balance) { balance -= amt; return true; } return false; },public: double balance;,private: bool withdraw(double amt) { balance = balance - amt; },,2,,"[Scenario: Bank Account Encapsulation]
+A banking application models a bank account with balance .",
+C++,Case Study,"[Scenario: Student Grade Tracker] A class Student stores scores for 3 subjects. Which member function accurately calculates and returns the student's
+average as a double ?",double getAverage() { return (sub1 + sub2 + sub3) / 3; },double getAverage() { return (double)(sub1 + sub2 + sub3) / 3.0; },int getAverage() { return sub1 + sub2 + sub3 / 3.0; },void getAverage() { cout << sub1 + sub2 + sub3; },,2,,"[Scenario: Student Grade Tracker]
+A class Student stores scores for 3 subjects.",
+C++,Case Study,"[Scenario: E-Commerce Product Catalog] An online bookstore stores book objects with title, price, and stock count. If a customer orders $K$ units of an item with
+stock $S$, which logical branch correctly handles the order?",if (K <= S) { S -= K; cout << \,if (K > S) { S -= K; cout << \,S = S - K; cout << \,if (K == S) cout << \,,2,,"[Scenario: E-Commerce Product Catalog]
+An online bookstore stores book objects with title, price, and stock count.",
+C++,Case Study,"[Scenario: Vehicle Fleet Management] A company has a base class Vehicle with speed and derived class Car with numDoors . Which constructor
+implementation in Car correctly initializes both base and derived attributes?","Car(int s, int d) { speed = s; numDoors = d; }","Car(int s, int d) : Vehicle(s) { numDoors = d; }","Car(int s, int d) { Vehicle(s); numDoors = d; }","Car(int s, int d) : numDoors(d) : Vehicle(s) {}",,2,,"[Scenario: Vehicle Fleet Management]
+A company has a base class Vehicle with speed and derived class Car with numDoors .",
+C++,Case Study,"[Scenario: Temperature Unit Converter] A weather station needs an overloaded function convert() : one version converts C to F, and another converts F to C.
+How can the developer resolve signature collision if both take a single float?",Overload using different return types only,"Introduce an additional character parameter e.g., `convert(float val, char scale)` to differentiate signatures",C++ automatically deduces conversion direction,Functions cannot perform conversions in C++,,2,,"[Scenario: Temperature Unit Converter]
+A weather station needs an overloaded function convert() : one version converts C to F, and another converts F to C.",
+C++,Case Study,"[Scenario: Password Verification] A security module validates that a password string has at least 8 characters and contains at least one digit. Which loop
+structure correctly inspects string pwd ?",bool ok = (pwd.length() >= 8); for(char c : pwd) if(isdigit(c)) { ok = true; break; },bool hasDigit = false; if (pwd.length() >= 8) { for (int i=0; i<pwd.length(); i++) if (isdigit(pwd[i])) hasDigit = true; } return hasDigit;,return (pwd.length() >= 8) || isdigit(pwd[0]);,return pwd == \,,2,,"[Scenario: Password Verification]
+A security module validates that a password string has at least 8 characters and contains at least one digit.",
+C++,Case Study,"[Scenario: Library Management Overdue Fine Calculation] A library charges 2 rupees per day for the first 5 overdue days, and 5 rupees per day for every day thereafter. Which
+code correctly computes fine for days overdue?",if (days <= 5) fine = days * 2; else fine = 10 + (days - 5) * 5;,if (days <= 5) fine = days * 2; else fine = days * 5;,fine = days * 2 + days * 5;,if (days > 5) fine = (days - 5) * 5; else fine = 0;,,2,,"[Scenario: Library Management Overdue Fine Calculation]
+A library charges 2 rupees per day for the first 5 overdue days, and 5 rupees per day for every day thereafter.",
+C++,Case Study,"[Scenario: Copy Constructor vs Default Assignment]
+Consider class Point :",Compile-time error because no copy constructor was defined,The compiler invokes the default memberwise copy constructor to copy `x` and `y` from `p1` to `p2`,`p2` shares memory reference with `p1`,`p2` has garbage values,,2,,"[Scenario: Copy Constructor vs Default Assignment]
+Consider class Point :
+class Point {
+    int x, y;
+public:
+    Point(int a, int b) { x = a; y = b; }
+};
+What occurs when a developer writes:
+Point p1(10, 20);
+Point p2 = p1;","class Point {
+    int x, y;
+public:
+    Point(int a, int b) { x = a; y = b; }
+};
+What occurs when a developer writes:
+Point p1(10, 20);
+Point p2 = p1;"
+C++,Case Study,"[Scenario: Loop Condition with Decrement Operator]
+What is the exact output of this program?",30 20 10,20 10 0,"Garbage value, then 30 20",Infinite loop,,2,,"[Scenario: Loop Condition with Decrement Operator]
+What is the exact output of this program?","int arr[] = {10, 20, 30};\nint i = 3;\nwhile (i-- > 0) {\n    cout << arr[i] << \"
+C++,Case Study,"[Scenario: Counter Reset in Multi-Department Audit] A department score counter must be reset to zero at the start of each new department iteration. Which loop placement
+guarantees proper reinitialization?",int deptScore = 0; for (int d=0; d<D; d++) { ... },for (int d=0; d<D; d++) { int deptScore = 0; for(int s=0; s<S; s++) deptScore += score[d][s]; cout << deptScore; },Declare `deptScore` globally,Reset `deptScore` only inside the inner loop,,2,,"[Scenario: Counter Reset in Multi-Department Audit]
+A department score counter must be reset to zero at the start of each new department iteration.",
+Java,Fundamentals,Which component of the Java platform is directly responsible for executing compiled Java bytecode (.class files)?,JDK (Java Development Kit),JVM (Java Virtual Machine),Javadoc,Javac,,1,,,
+Java,Fundamentals,What is the exact signature of the application entry point main method in standard Java?,public void main(String[] args),public static void main(String[] args),static void main(String args),public int main(String[] args),,1,,,
+Java,Fundamentals,Which of the following is NOT a primitive data type in Java?,int,boolean,String,double,,1,,,
+Java,Fundamentals,What is the default initial value of an uninitialized boolean instance variable in a Java class?,true,false,0,null,,1,,,
+Java,Fundamentals,Which keyword is used in Java by a subclass to inherit from a superclass?,implements,inherits,extends,super,,1,,,
+Java,Fundamentals,Which statement correctly prints text followed by a new line to the console in Java?,Console.writeLine(\,System.out.println(\,printf(\,System.in.read(\,,1,,,
+Java,Fundamentals,What is the effect of declaring a class method as static in Java?,The method cannot return any value,The method belongs to the class itself rather than instances and can be invoked without creating an object,The method cannot accept arguments,The method cannot access static variables,,1,,,
+Java,Fundamentals,What built-in method in Java is used to determine the total number of characters in a String object?,str.length,str.length(),str.size(),str.count(),,1,,,
+Java,Fundamentals,What is the result of widening type conversion when assigning an int holding 42 to a double in Java?,Compile error,The value is safely converted to 42.0 without loss of precision,Runtime ClassCastException,The value remains integer 42,,1,,,
+Java,Fundamentals,Which block in Java is guaranteed to execute whether an exception is thrown or caught in a try-catch construct?,throw,finally,throws,catch-all,,1,,,
+Java,Technical Understanding,What is the difference between str1 == str2 and str1.equals(str2) when comparing two String objects in Java?,"`==` compares character content, while `.equals()` compares memory references","`==` compares memory references (identity), while `.equals()` compares character sequence content",Both operators are completely interchangeable,`.equals()` only works for primitive data types,,2,,,
+Java,Technical Understanding,What exception is thrown at runtime if a program attempts to divide an integer by zero (e.g. 10 / 0 ) in Java?,NullPointerException,ArithmeticException,NumberFormatException,ArrayIndexOutOfBoundsException,,2,,,
+Java,Technical Understanding,Consider array declaration int[] scores = new int[5]; . What is the default value of each element immediately after allocation?,Garbage value,0,null,-1,,2,,,
+Java,Technical Understanding,What character is returned by calling \,'D','T','O','H',,2,,,
+Java,Technical Understanding,What occurs when the following code is compiled?,Valid method overloading,"Compile error: method add(int, int) is already defined (return type alone cannot distinguish overloaded methods)",Runtime NoSuchMethodError,Compiler picks method with larger return type,,2,,,"class Test {
+    int add(int a, int b) { return a + b; }
+    double add(int a, int b) { return (double)(a + b); }
+}"
+Java,Technical Understanding,What is the output of the following Java snippet?,8,7,7.89,Compilation error,,2,,,"int x = (int) 7.89;
+System.out.print(x);"
+Java,Technical Understanding,Consider the loop: int count = 0; for (int i = 0; i < 10; i++) { if (i == 4) break; count++; } System.out.print(count); What is printed?,3,4,5,10,,2,,,
+Java,Technical Understanding,Which access modifier in Java restricts visibility strictly within the declaring class itself?,protected,public,private,default,,2,,,
+Java,Technical Understanding,What is the output of the following Java program?,true true,false true,false false,true false,,2,,,public class StringTest {\n    public static void main(String[] args) {\n        String s1 = \
+Java,Technical Understanding,What is printed by the following code? int a = 5; int b = a > 2 ? a++ : ++a; System.out.print(a + \,6 5,6 6,5 5,7 6,,2,,,
+Java,Logic and Debugging,What is the output of the following Java program?,10,24,12,4,,3,,,"public class App {
+    public static void main(String[] args) {
+        int product = 1;
+        for (int i = 1; i <= 4; i++) {
+            product *= i;
+        }
+        System.out.print(product);
+    }
+}"
+Java,Logic and Debugging,What will be printed by the following code?,5,12,20,45,,3,,,"public class Test {
+    public static void main(String[] args) {
+        int[] nums = {5, 12, 8, 20};
+        int max = nums[0];
+        for (int x : nums) {
+            if (x > max) max = x;
+        }
+        System.out.print(max);
+    }
+}"
+Java,Logic and Debugging,What is the output of the following program?,10,25,0,Compilation error,,3,,,"class Box {
+    int length;
+    Box(int l) { length = l; }
+}
+public class Main {
+    public static void main(String[] args) {
+        Box b1 = new Box(10);
+        Box b2 = b1;
+        b2.length = 25;
+        System.out.print(b1.length);
+    }
+}"
+Java,Logic and Debugging,What is printed when the following code executes?,15,12,10,7,,3,,,"public class LoopTrace {
+    public static void main(String[] args) {
+        int sum = 0;
+        for (int i = 1; i <= 5; i++) {
+            if (i == 3) continue;
+            sum += i;
+        }
+        System.out.print(sum);
+    }
+}"
+Java,Logic and Debugging,What is the output of the following code involving String concatenation?,30Java30,1020Java1020,30Java1020,Compilation error,,3,,,public class StringConcat {\n    public static void main(String[] args) {\n        System.out.print(10 + 20 + \
+Java,Logic and Debugging,What does the following exception handling snippet output?,A B C,B C,B,A C,,3,,,public class ExTest {\n    public static void main(String[] args) {\n        try {\n            int x = 10 / 0;\n            System.out.print(\
+Java,Logic and Debugging,Identify the compile-time error in the following Java snippet:,`if (true)` is illegal syntax,Variable `temp` is local to the `if` block and cannot be resolved outside its scope,`System.out.print` cannot print variables named `temp`,Braces are forbidden,,3,,,"public class ScopeTest {
+    public static void main(String[] args) {
+        if (true) {
+            int temp = 50;
+        }
+        System.out.print(temp);
+    }
+}"
+Java,Logic and Debugging,What is the output of the following Java program?,2 1,2,1 2,1,,3,,,class Base {\n    Base() { System.out.print(\
+Java,Logic and Debugging,What will be printed by the following code involving static variables?,1,3,0,Compilation error,,3,,,"class Item {
+    static int count = 0;
+    Item() { count++; }
+}
+public class Test {
+    public static void main(String[] args) {
+        Item a = new Item();
+        Item b = new Item();
+        Item c = new Item();
+        System.out.print(Item.count);
+    }
+}"
+Java,Logic and Debugging,What is the output of the following method invocation?,10,99,0,ArrayIndexOutOfBoundsException,,3,,,"public class MethodRef {
+    static void modify(int[] arr) {
+        arr[0] = 99;
+    }
+    public static void main(String[] args) {
+        int[] data = {10, 20, 30};
+        modify(data);
+        System.out.print(data[0]);
+    }
+}"
+Java,Case Study,"[Scenario: Bank Account Security] A fintech startup designs an Account class. Which design ensures that the account balance cannot be set to a negative
+value from outside the class?",Make `balance` public,Declare `private double balance;` and provide a public deposit/withdraw method with validation checks,Declare `protected double balance;` with no methods,Make `balance` static across all accounts,,2,,"[Scenario: Bank Account Security]
+A fintech startup designs an Account class.",
+Java,Case Study,"[Scenario: Student Registration System] A university portal registers students with roll numbers. If roll must be unique and constant once assigned, which
+modifier should precede int roll; ?",static,final,abstract,volatile,,2,,"[Scenario: Student Registration System]
+A university portal registers students with roll numbers.",
+Java,Case Study,"[Scenario: Payroll Calculation] If basic salary is basic , medical allowance is 15%, and tax deduction is 10%, which Java expression computes net
+salary?",double net = basic + (basic * 0.15) - (basic * 0.10);,double net = basic * 0.15 - 0.10;,double net = basic + 15 - 10;,double net = (basic - 0.10) * 0.15;,,2,,"[Scenario: Payroll Calculation]
+If basic salary is basic , medical allowance is 15%, and tax deduction is 10%, which Java expression computes net
+salary?",
+Java,Case Study,"[Scenario: Robust Input Parser] A programmer converts user text to an integer. Which construct ensures the app does not crash if non-numeric
+characters are entered?",try { int val = Integer.parseInt(text); } catch (NumberFormatException e) { System.out.println(\,if (text == 0) return 0;,int val = (int) text;,while (text.length() > 0) Integer.parseInt(text);,,2,,"[Scenario: Robust Input Parser]
+A programmer converts user text to an integer.",
+Java,Case Study,"[Scenario: Inventory Item Out-of-Stock Alert] Given int[] inventory = {15, 0, 8, 0, 12}; , which loop correctly prints the indices of all items that are out of
+stock?",for (int x : inventory) if (x == 0) System.out.print(x + \,for (int i = 0; i < inventory.length; i++) if (inventory[i] == 0) System.out.print(i + \,for (int i = 1; i <= inventory.length; i++) if (inventory[i] == 0) System.out.print(i);,if (inventory[0] == 0) System.out.print(\,,2,,"[Scenario: Inventory Item Out-of-Stock Alert]
+Given int[] inventory = {15, 0, 8, 0, 12}; , which loop correctly prints the indices of all items that are out of
+stock?",
+Java,Case Study,"[Scenario: Domain Email Validator] A company permits login only for users with an @lnmcbm.ac.in email. Which expression correctly validates String
+email ?",email.contains(\,email.endsWith(\,email == \,"email.substring(0, 5).equals(\",,2,,"[Scenario: Domain Email Validator]
+A company permits login only for users with an @lnmcbm.ac.in email.",
+Java,Case Study,"[Scenario: Supermarket Billing Cashier] What is the bug in the following snippet?
+double total = 600.0;
+if (total > 500.0);
+    total -= 50.0;
+System.out.print(total);",`total` should be an int,"The stray semicolon after `if (total > 500.0);` terminates the conditional statement prematurely, causing `total -= 50.0;` to execute unconditionally",The subtraction operator `-=` cannot be used with floating point numbers,`total > 500.0` is an invalid expression,,2,,"[Scenario: Supermarket Billing Cashier]
+What is the bug in the following snippet?",
+Java,Case Study,"[Scenario: Exam Answer Key Grader] When comparing two character arrays char[] a and char[] b , what is the result of calling a.equals(b) in Java?",Returns true if all characters match,Returns false unless `a` and `b` reference the exact same array object in memory (arrays do not override Object's `.equals()`),Causes compile-time error,Returns the number of matching elements,,2,,"[Scenario: Exam Answer Key Grader]
+When comparing two character arrays char[] a and char[] b , what is the result of calling a.equals(b) in Java?",
+Java,Case Study,"[Scenario: Safe Array Traversal Boundary] What happens when the loop executes on int[] data = {4, 8, 12}; ?
+int sum = 0;
+for (int i = 0; i <= data.length; i++) {
+    sum += data[i];
+}",Computes correct sum of 24,Throws `ArrayIndexOutOfBoundsException` at runtime when `i == data.length`,Treats `data[data.length]` as 0,Compilation error,,2,,"[Scenario: Safe Array Traversal Boundary]
+What happens when the loop executes on int[] data = {4, 8, 12}; ?",
+Java,Case Study,"[Scenario: Hospital Patient Ward Counter] A hospital software increments a counter totalPatients when a new Patient is created. Which keyword ensures
+totalPatients is shared across all patient objects?",private,static,transient,synchronized,,2,,"[Scenario: Hospital Patient Ward Counter]
+A hospital software increments a counter totalPatients when a new Patient is created.",
+Python,Fundamentals,What is the primary mechanism used in Python to define code blocks (such as the body of loops or conditional statements)?,Curly braces { },Consistent whitespace indentation,Begin ... End statements,Parentheses ( ),,1,,,
+Python,Fundamentals,Which operator in Python performs integer floor division (discarding the fractional part)?,/,//,%,**,,1,,,
+Python,Fundamentals,What is the data type returned by Python's built-in input() function by default?,int,float,str,bool,,1,,,
+Python,Fundamentals,Which data structure in Python is IMMUTABLE (its elements cannot be modified in place after creation)?,List,Dictionary,Set,Tuple,,1,,,
+Python,Fundamentals,What is the result of evaluating 2 ** 3 in Python?,6,8,5,9,,1,,,
+Python,Fundamentals,Which character is used to denote a single-line comment in Python?,//,/*,#,--,,1,,,
+Python,Fundamentals,Which built-in function returns the number of items in a list or characters in a string in Python?,size(),count(),len(),length(),,1,,,
+Python,Fundamentals,"Which Python collection type stores an unordered collection of UNIQUE elements, eliminating duplicate entries?",List,Tuple,Set,String,,1,,,
+Python,Fundamentals,"What are the numbers generated by list(range(2, 9, 3)) in Python?","[2, 5, 8]","[2, 5, 8, 11]","[2, 3, 4, 5, 6, 7, 8]","[3, 6, 9]",,1,,,
+Python,Fundamentals,How do you check whether a specific key 'email' exists in a dictionary named user ?,if 'email' in user:,if user.has_key('email'):,if 'email' == user.key:,if user['email'] != None:,,1,,,
+Python,Technical Understanding,What is the output of the following string slicing operation in Python? text = \,DTHO,THON,THON2,DTHON,,2,,,
+Python,Technical Understanding,What happens when you append an element to a list using nums.append(50) ?,Creates a new list and returns it,"Mutates the original list in place by adding 50 to the end, returning None",Inserts 50 at index 0,Throws error if 50 is already present,,2,,,
+Python,Technical Understanding,What is the output of the following code snippet?,LNMCBM,lnmcbm,Lnmcbm,Error,,2,,,s = \
+Python,Technical Understanding,What is the output of the following boolean expression in Python? print(True and False or True),False,True,None,SyntaxError,,2,,,
+Python,Technical Understanding,Consider the dictionary: student = {\,2,3,4,90,,2,,,
+Python,Technical Understanding,What is the output of the following list operation? colors = [\,"['red', 'blue']","['red', 'blue', 'green']","['red', 'green', 'blue']","['green', 'green']",,2,,,
+Python,Technical Understanding,"What is the output of the following set operation? a = {1, 2, 3} b = {3, 4, 5} print(a & b)","{1, 2, 3, 4, 5}",{3},"{1, 2, 4, 5}",{},,2,,,
+Python,Technical Understanding,"What happens when tup[1] = 99 is executed on tup = (10, 20, 30) ?","tup becomes (10, 99, 30)",TypeError is raised because tuples do not support item assignment,99 is appended,tup converted to list,,2,,,
+Python,Technical Understanding,What is the output of the following negative slicing operation in Python? word = \,PYTHON,NOHTYP,N,IndexError,,2,,,
+Python,Technical Understanding,"What is the output of the following loop with a break statement? total = 0 for i in range(1, 10): if i % 3 == 0: break total += i print(total)",0,3,6,45,,2,,,
+Python,Logic and Debugging,"What is the output of the following loop in Python? nums = [2, 4, 6, 8] s = 0 for x in nums: s += x print(s)",8,20,12,16,,3,,,
+Python,Logic and Debugging,What is printed by the following code snippet? s = \,og,Cg,on,od,,3,,,
+Python,Logic and Debugging,"What is the output of the following list manipulation snippet? items = [10, 20] items = items * 2 items[1] = 99 print(items)","[10, 20, 10, 20]","[10, 99, 10, 20]","[10, 99, 10, 99]","[20, 40]",,3,,,
+Python,Logic and Debugging,What is the output of the following nested loop? c = 0 for i in range(2): for j in range(3): c += 1 print(c),5,6,9,4,,3,,,
+Python,Logic and Debugging,What is printed by the following code? data = {\,3,6,"['a', 'b', 'c']",TypeError,,3,,,
+Python,Logic and Debugging,Identify the syntax error in the following Python snippet: age = 19 if age >= 18 print(\,Parentheses required around condition,Missing colon `:` at the end of the `if` statement line,print cannot take string literals,age cannot be assigned integer,,3,,,
+Python,Logic and Debugging,What is the output of the following loop with continue ? val = 0 for k in range(5): if k == 2: continue val += k print(val),10,8,6,7,,3,,,
+Python,Logic and Debugging,What is printed by the following string replace snippet? msg = \,bonana,bonono,banana,Error,,3,,,
+Python,Logic and Debugging,"What is the output of the following Python snippet? x = [1, 2, 3] y = x y.append(4) print(len(x))",3,4,1,Error,,3,,,
+Python,Logic and Debugging,"What is the output of the following set logic? s = set([10, 20, 10, 30, 20]) print(sum(s))",90,60,50,30,,3,,,
+Python,Case Study,"[Scenario: Student Exam Score Filter] A teacher has test scores scores = [45, 78, 92, 33, 64, 88] . Which code snippet correctly counts how many
+students scored 60 or above?",count = 0; for s in scores: if s >= 60: count += 1,count = sum(scores) / 60,count = scores.count(60),count = len(scores) - 60,,2,,"[Scenario: Student Exam Score Filter]
+A teacher has test scores scores = [45, 78, 92, 33, 64, 88] .",
+Python,Case Study,"[Scenario: Online Shopping Cart Subtotal] A shopper adds items with prices prices = [150, 499, 299] . If a delivery fee of 50 is added only when subtotal is
+under 1000, which code calculates total ?",total = sum(prices); if total < 1000: total += 50,total = sum(prices) + 50,total = max(prices) + 50,if total < 1000: total = 50,,2,,"[Scenario: Online Shopping Cart Subtotal]
+A shopper adds items with prices prices = [150, 499, 299] .",
+Python,Case Study,[Scenario: Product Inventory Lookup] A store keeps inventory stock = {\,"qty = stock.get(item_name, 0)",qty = stock[item_name],qty = stock.pop(item_name),qty = stock.find(item_name),,2,,[Scenario: Product Inventory Lookup]\nA store keeps inventory stock = {\,
+Python,Case Study,[Scenario: Clean User Input] A web form receives a phone string raw = \,raw.clean(),raw.strip(),raw.remove(' '),raw.lower(),,2,,[Scenario: Clean User Input]\nA web form receives a phone string raw = \,
+Python,Case Study,[Scenario: Duplicate Email Detection] Given emails = [\,unique_count = len(set(emails)),unique_count = len(emails) - 1,unique_count = sum(emails),unique_count = emails.unique(),,2,,[Scenario: Duplicate Email Detection]\nGiven emails = [\,
+Python,Case Study,[Scenario: Word Palindrome Checker] Given w = \,if w == w[::-1]:,if w == reversed(w):,if w[0] == w[-1]:,if len(w) % 2 != 0:,,2,,[Scenario: Word Palindrome Checker]\nGiven w = \,
+Python,Case Study,"[Scenario: Daily Steps Milestone Tracker] Given steps = [4500, 10200, 8300, 11500, 6200] , which code finds the highest and lowest daily step count?",highest = max(steps); lowest = min(steps),highest = steps[0]; lowest = steps[-1],highest = sum(steps); lowest = 0,highest = steps.sort(); lowest = steps.reverse(),,2,,"[Scenario: Daily Steps Milestone Tracker]
+Given steps = [4500, 10200, 8300, 11500, 6200] , which code finds the highest and lowest daily step count?",
+Python,Case Study,"[Scenario: Default Mutable Trap in Slicing] A programmer clones original = [1, 2, 3] :
+original = [1, 2, 3]
+clone = original[:]
+clone.append(4)
+print(original)
+What is printed?","[1, 2, 3]","[1, 2, 3, 4]","[4, 1, 2, 3]",Error,,2,,"[Scenario: Default Mutable Trap in Slicing]
+A programmer clones original = [1, 2, 3] :
+original = [1, 2, 3]
+clone = original[:]
+clone.append(4)
+print(original)
+What is printed?",
+Python,Case Study,[Scenario: Multi-Condition Membership Testing] What is the logical bug in the following check?\nrole = \,String comparison fails without double quotes,`or \,role cannot be compared with or,IndentationError,,2,,"[Scenario: Multi-Condition Membership Testing]
+What is the logical bug in the following check?",
+Python,Case Study,"[Scenario: Total Bill with Tax Calculator] With qty = 5 and price = 40.0 , plus 5% GST, which expression computes the total bill?",total = (qty * price) * 1.05,total = qty * price + 5,total = qty * price * 0.05,total = (qty + price) * 1.05,,2,,"[Scenario: Total Bill with Tax Calculator]
+With qty = 5 and price = 40.0 , plus 5% GST, which expression computes the total bill?",
+Web Development,Fundamentals,Which HTML tag is used to create an interactive clickable hyperlink?,<link>,<a>,<href>,<nav>,,1,,,
+Web Development,Fundamentals,Which CSS property is used to specify the background color of an HTML element?,color,bgcolor,background-color,surface-color,,1,,,
+Web Development,Fundamentals,Which layer of the CSS Box Model represents the transparent spacing between an element's content area and its border?,Margin,Padding,Outline,Gutter,,1,,,
+Web Development,Fundamentals,Which keyword in modern JavaScript declares a block-scoped variable whose value CANNOT be reassigned after initialization?,var,let,const,static,,1,,,
+Web Development,Fundamentals,Which method on the browser document object retrieves an element matching a unique id attribute?,document.findId(),document.getElementById(),document.selectId(),document.locate(),,1,,,
+Web Development,Fundamentals,Which HTML5 semantic tag is designated to contain introductory content or primary navigational links at the top of a webpage?,<header>,<top>,<section>,<caption>,,1,,,
+Web Development,Fundamentals,Which CSS selector syntax targets all elements having the class name card ?,#card,.card,card,*card,,1,,,
+Web Development,Fundamentals,What standard function prints debugging diagnostic messages to the browser's developer console?,window.print(),console.log(),System.out.println(),document.write(),,1,,,
+Web Development,Fundamentals,"In a CSS Flexbox container with default flex-direction: row , which property controls alignment along the main (horizontal) axis?",align-items,justify-content,align-content,flex-wrap,,1,,,
+Web Development,Fundamentals,What is the difference between let and var in JavaScript regarding variable scoping?,"var is block-scoped, while let is function-scoped","let is block-scoped, while var is function-scoped (or globally scoped)",let cannot be reassigned,Both possess identical block scoping rules,,1,,,
+Web Development,Technical Understanding,Consider the CSS rule: .container { display: flex; justify-content: center; align-items: center; } What is the visual layout of child items inside .container ?,Stacked vertically top-left,Centered both horizontally and vertically within the container,Distributed with space-between,Aligned along right boundary,,2,,,
+Web Development,Technical Understanding,What does element.textContent = \,Renders 'Hello' in bold text,Inserts the literal string '<b>Hello</b>' as plain text without parsing HTML tags,Throws DOMException,Deletes the element,,2,,,
+Web Development,Technical Understanding,"Which CSS position value positions an element relative to the viewport, keeping it fixed during scrolling?",position: relative,position: absolute,position: fixed,position: static,,2,,,
+Web Development,Technical Understanding,Which event triggers in JavaScript when a user clicks on an HTML button?,onhover,click,submit,change,,2,,,
+Web Development,Technical Understanding,What is the total calculated width of .box under standard CSS content-box ? .box { width: 200px; padding: 15px; border: 5px solid black; margin: 10px; },200px,240px,260px,220px,,2,,,
+Web Development,Technical Understanding,What is the result of evaluating '5' + 3 versus '5' - 3 in JavaScript?,'8' and '2','53' and 2,8 and 2,NaN and 2,,2,,,
+Web Development,Technical Understanding,Which CSS media query applies styles when the viewport width is 768px or narrower?,@media (min-width: 768px),@media (max-width: 768px),@media (screen-width <= 768px),@media mobile-only,,2,,,
+Web Development,Technical Understanding,How do you programmatically change the background color of element btn to green in JavaScript?,btn.background = \,btn.style.backgroundColor = \,btn.css(\,btn.style.background-color = \,,2,,,
+Web Development,Technical Understanding,What is the output of console.log((0 == false) + \,true true,false false,true false,false true,,2,,,
+Web Development,Technical Understanding,What color is text inside <p id=\,blue,green,red,black,,2,,,
+Web Development,Logic and Debugging,What is printed by the following JavaScript loop?,4,10,6,15,,3,,,"let count = 0;
+for (let i = 1; i <= 4; i++) {
+    count += i;
+}
+console.log(count);"
+Web Development,Logic and Debugging,"What is the output of calculateArea(5, 8) ?",13,40,26,undefined,,3,,,"function calculateArea(w, h) {
+    return w * h;
+}"
+Web Development,Logic and Debugging,What is the result of:,Appends new heading at bottom,Updates visible text in element with id 'title' to 'CODTHON 2026',Changes browser tab title,Error,,3,,,const heading = document.getElementById(\
+Web Development,Logic and Debugging,What will be printed to the console?,10,20,undefined,SyntaxError,,3,,,"let x = 10;
+if (x > 5) {
+    let x = 20;
+    console.log(x);
+}"
+Web Development,Logic and Debugging,What is the output of the following JavaScript code snippet?,2,3,undefined,"['apple', 'banana', 'orange']",,3,,,let fruits = [\
+Web Development,Logic and Debugging,How can an event listener prevent form submit from automatically reloading the webpage?,event.stopPropagation();,event.preventDefault();,return false;,window.stop();,,3,,,
+Web Development,Logic and Debugging,What is the output of:,Pass,Fail,true,undefined,,3,,,let score = 70;\nlet result = (score >= 60) ? \
+Web Development,Logic and Debugging,Identify the CSS error in: .card { background-color: #ffffff border-radius: 8px; },Class names cannot be card,Missing semicolon `;` after background-color value,Hex color codes must be 8 digits,Units must be %,,3,,,
+Web Development,Logic and Debugging,What is printed by:,\,\,\,\,,3,,,"let a;
+console.log(typeof a);"
+Web Development,Logic and Debugging,What is printed by:,10,8,6,7,,3,,,"let sum = 0;
+for (let i = 0; i < 5; i++) {
+    if (i === 2) continue;
+    sum += i;
+}
+console.log(sum);"
+Web Development,Case Study,[Scenario: Interactive Dark Mode Toggle] Which JavaScript snippet toggles class \,document.body.classList.toggle(\,document.body.className = \,document.body.style = \,document.body.setAttribute(\,,2,,[Scenario: Interactive Dark Mode Toggle]\nWhich JavaScript snippet toggles class \,
+Web Development,Case Study,[Scenario: Form Input Required Validation] Which condition verifies that input <input type=\,if (document.getElementById(\,if (document.getElementById(\,if (document.getElementById(\,if (username == null),,2,,[Scenario: Form Input Required Validation]\nWhich condition verifies that input <input type=\,
+Web Development,Case Study,[Scenario: Accessible Responsive Navbar] Which HTML tag provides the most semantically accessible wrapper for site navigation links?,<div class=\,<nav>,<section>,<article>,,2,,"[Scenario: Accessible Responsive Navbar]
+Which HTML tag provides the most semantically accessible wrapper for site navigation links?",
+Web Development,Case Study,[Scenario: Modal Dialog Visibility] Which CSS property cleanly hides a modal popup from rendering and layout calculation until triggered?,display: none;,opacity: 1;,position: static;,color: transparent;,,2,,"[Scenario: Modal Dialog Visibility]
+Which CSS property cleanly hides a modal popup from rendering and layout calculation until triggered?",
+Web Development,Case Study,[Scenario: Cart Badge Counter] <span id=\,const b = document.getElementById(\,b.textContent = b.textContent + 1;,b.value++;,document.getElementById(\,,2,,[Scenario: Cart Badge Counter]\n<span id=\,
+Web Development,Case Study,"[Scenario: Responsive Grid Breakpoints] To make grid columns full-width on mobile (< 600px), which rule belongs inside @media (max-width: 600px) ?",.col { width: 100%; },.col { display: none; },.col { width: 25%; },.col { float: left; },,2,,"[Scenario: Responsive Grid Breakpoints]
+To make grid columns full-width on mobile (< 600px), which rule belongs inside @media (max-width: 600px) ?",
+Web Development,Case Study,[Scenario: Disabling Submit Button During Processing] Which JavaScript line disables <button id=\,document.getElementById(\,document.getElementById(\,document.getElementById(\,document.getElementById(\,,2,,[Scenario: Disabling Submit Button During Processing]\nWhich JavaScript line disables <button id=\,
+Web Development,Case Study,[Scenario: QuerySelectorAll NodeList Traversal] What is returned by document.querySelectorAll('.btn') ?,A single element,A static NodeList containing all matching elements supporting .forEach(),A dynamic HTMLCollection,An array of strings,,2,,"[Scenario: QuerySelectorAll NodeList Traversal]
+What is returned by document.querySelectorAll('.btn') ?",
+Web Development,Case Study,[Scenario: CSS Box-Sizing Reset] Why is * { box-sizing: border-box; } universally applied in CSS?,Eliminates all borders,"Ensures declared width and height include padding and borders, preventing layout overflow calculations",Enforces responsive text,Forces flex layout,,2,,"[Scenario: CSS Box-Sizing Reset]
+Why is * { box-sizing: border-box; } universally applied in CSS?",
+Web Development,Case Study,[Scenario: Table Construction for Student Roster] Which HTML tags create a valid table row with two header cells?,<tr><th>Roll No</th><th>Name</th></tr>,<row><head>Roll No</head><head>Name</head></row>,<table-row><td>Roll No</td><td>Name</td></table- row>,<th><tr>Roll No</tr><tr>Name</tr></th>,,2,,"[Scenario: Table Construction for Student Roster]
+Which HTML tags create a valid table row with two header cells?",
+DSA,Fundamentals,What is the time complexity of accessing an array element at a known index arr[k] in memory?,O(1),O(n),O(log n),O(n^2),,1,,,
+DSA,Fundamentals,"What fundamental data structure operates under the Last-In, First-Out (LIFO) operational principle?",Queue,Stack,Array,Hash Table,,1,,,
+DSA,Fundamentals,"What fundamental data structure operates under the First-In, First-Out (FIFO) operational principle?",Queue,Stack,Tree,Binary Search Tree,,1,,,
+DSA,Fundamentals,What is the strict prerequisite condition required before Binary Search can be applied to an array?,The array must contain only positive integers,The array elements must be arranged in sorted order,The array must have an even number of elements,The array must not contain duplicate values,,1,,,
+DSA,Fundamentals,What is the worst-case time complexity of searching for an element in an unsorted array of size $N$ using Linear Search?,O(1),O(log N),O(N),O(N^2),,1,,,
+DSA,Fundamentals,Which of the following operations is used to insert a new element onto the top of a Stack?,Pop,Push,Enqueue,Dequeue,,1,,,
+DSA,Fundamentals,What are the two essential components required in every recursive function to prevent stack overflow?,A loop header and an array,A base case (termination condition) and a recursive case (progressing toward base case),A try block and a catch block,A global pointer and a counter,,1,,,
+DSA,Fundamentals,What is the typical average and worst-case time complexity of Bubble Sort on an array of size $N$?,O(N),O(N^2),O(N log N),O(1),,1,,,
+DSA,Fundamentals,What is the maximum number of comparisons required by Binary Search on a sorted array of 64 elements in the worst case?,64,32,7,6,,1,,,
+DSA,Fundamentals,"In a Queue implemented using a fixed-size array, from which end are elements deleted (removed)?",Rear (Tail),Front (Head),Middle,Top,,1,,,
+DSA,Technical Understanding,"Consider array arr = [24, 18, 35, 12, 40] . What is the array state after the FIRST full pass of Bubble Sort (ascending order)?","[12, 18, 24, 35, 40]","[18, 24, 12, 35, 40]","[18, 24, 35, 12, 40]","[24, 18, 12, 35, 40]",,2,,,
+DSA,Technical Understanding,How does Selection Sort find the next element to place into its sorted position during each pass?,Repeatedly swapping adjacent pairs,Scanning the unsorted subarray to find the minimum element and swapping it with the first unsorted position,Dividing the array in half,Inserting elements into a secondary queue,,2,,,
+DSA,Technical Understanding,Which algorithm design tests if a string of length $N$ is a palindrome in $O(N)$ time with $O(1)$ extra space?,"Two-pointer technique comparing characters from both ends moving inward: `left = 0, right = N - 1`",Nested loops checking all character pairs: $O(N^2)$,Sorting the string first,Converting each character to binary,,2,,,
+DSA,Technical Understanding,What is the time complexity of checking whether an integer $N$ is prime by testing divisibility up to $\sqrt{N}$?,O(N),O(sqrt(N)),O(N^2),O(1),,2,,,
+DSA,Technical Understanding,"Consider Binary Search for key = 37 in sorted array [10, 15, 23, 37, 45, 52, 68, 79, 90] (indices 0 to 8). What index is inspected in the FIRST comparison?",0,4,3,5,,2,,,
+DSA,Technical Understanding,What is the return value of mystery(4) ? int mystery(int n) { if (n <= 1) return 1; return n + mystery(n - 1); },10,24,4,15,,2,,,
+DSA,Technical Understanding,"A Stack is initially empty. Operations: push(10) , push(20) , pop() , push(30) , push(40) , pop() , push(50) . What element is at the top?",10,30,40,50,,2,,,
+DSA,Technical Understanding,"A Queue is initially empty. Operations: enqueue(A) , enqueue(B) , dequeue() , enqueue(C) , dequeue() . What is next in line to dequeue?",A,B,C,Empty,,2,,,
+DSA,Technical Understanding,"In Binary Search, why is mid = low + (high - low) / 2 preferred over (low + high) / 2 ?",Executes faster,Prevents signed 32-bit integer overflow when low + high exceeds maximum integer value,Handles negative numbers,Avoids floating point,,2,,,
+DSA,Technical Understanding,"For an array of $N$ integers with values in range $1$ to $100$, what is the time complexity to find frequencies using an array freq[101] ?",O(N^2),O(N log N),O(N),O(1),,2,,,
+DSA,Logic and Debugging,"What is the output of the following number reversing algorithm for num = 1234 ? int rev = 0, num = 1234; while (num > 0) { rev = rev * 10 + num % 10; num /= 10; } printf(\",1234,4321,10,4,,3,,,
+DSA,Logic and Debugging,What does the following code compute on array arr of size n ? int ans = arr[0]; for (int i = 1; i < n; i++) { if (arr[i] < ans) ans = arr[i]; },Maximum element,Minimum element,Average value,Sum of elements,,3,,,
+DSA,Logic and Debugging,What is the return value of factorial(3) ? int factorial(int n) { if (n <= 1) return 1; return n * factorial(n - 1); },3,6,9,1,,3,,,
+DSA,Logic and Debugging,"What is the output of the following sum-of-digits code for n = 456 ? int n = 456, sum = 0; while (n > 0) { sum += n % 10; n /= 10; } printf(\",15,456,24,6,,3,,,
+DSA,Logic and Debugging,"What is the output of the following array reversal code? int a[] = {1, 2, 3, 4, 5}; int l = 0, r = 4; while (l < r) { int temp = a[l]; a[l] = a[r]; a[r] = temp; l++; r--; } printf(\",1 5,5 1,3 3,5 5,,3,,,
+DSA,Logic and Debugging,"What is the bug in the following Linear Search function? int search(int arr[], int n, int target) { for (int i = 0; i < n; i++) { if (arr[i] == target) return i; else return -1; } }",Loop condition out of bounds,The `else return -1;` statement exits the function during iteration 0 if the first element does not match,Linear search cannot return -1,Target must be float,,3,,,
+DSA,Logic and Debugging,"What is the state of arr = [5, 1, 4, 2, 8] after the FIRST pass of Selection Sort (ascending order)?","[1, 5, 4, 2, 8]","[1, 2, 4, 5, 8]","[5, 1, 4, 2, 8]","[8, 1, 4, 2, 5]",,3,,,
+DSA,Logic and Debugging,What is the time complexity of the following nested loop? for (int i = 0; i < n; i++) { for (int j = 0; j < n; j++) { printf(\,O(n),O(n^2),O(1),O(log n),,3,,,
+DSA,Logic and Debugging,"What is printed by checking num = 121 ? int num = 121, orig = num, rev = 0; while (num > 0) { rev = rev * 10 + num % 10; num /= 10; } if (orig == rev) printf(\",NO,YES,121,Compilation error,,3,,,
+DSA,Logic and Debugging,What is the output of counting vowels in \,2,3,4,5,,3,,,
+DSA,Case Study,"[Scenario: Two-Sum Target Search] Which brute-force nested loop correctly checks all unique pairs $(i, j)$ in array arr of size $n$?",for (int i=0; i<n; i++) for (int j=0; j<n; j++) if (arr[i]+arr[j] == target) return true;,for (int i=0; i<n-1; i++) for (int j=i+1; j<n; j++) if (arr[i]+arr[j] == target) return true;,for (int i=0; i<n; i++) if (arr[i]+arr[i] == target) return true;,if (arr[0] + arr[n-1] == target) return true;,,2,,"[Scenario: Two-Sum Target Search]
+Which brute-force nested loop correctly checks all unique pairs $(i, j)$ in array arr of size $n$?",
+DSA,Case Study,[Scenario: Leaderboard Score Ranking] Which condition in Bubble Sort rearranges scores in DESCENDING order?,"if (scores[j] < scores[j + 1]) swap(scores[j], scores[j + 1]);","if (scores[j] > scores[j + 1]) swap(scores[j], scores[j + 1]);","if (scores[j] == scores[j + 1]) swap(scores[j], scores[j + 1]);","if (scores[0] < scores[n - 1]) swap(scores[0], scores[n - 1]);",,2,,"[Scenario: Leaderboard Score Ranking]
+Which condition in Bubble Sort rearranges scores in DESCENDING order?",
+DSA,Case Study,"[Scenario: Print Spooler Task Management] Which data structure guarantees documents are printed First-Come, First-Served?",Stack,Queue,Array with binary search,Recursion stack,,2,,"[Scenario: Print Spooler Task Management]
+Which data structure guarantees documents are printed First-Come, First-Served?",
+DSA,Case Study,[Scenario: Text Editor Undo Buffer] Which data structure is ideal for an editor's 'Undo' history (reverting the most recent action)?,Queue,Stack,Sorted Array,Binary Search,,2,,"[Scenario: Text Editor Undo Buffer]
+Which data structure is ideal for an editor's 'Undo' history (reverting the most recent action)?",
+DSA,Case Study,[Scenario: Efficient Prime Number Filter] Which loop boundary tests if integer $N > 1$ is prime with optimal $O(\sqrt{N})$ efficiency?,for (int i = 2; i < N; i++),for (int i = 2; i * i <= N; i++),for (int i = 1; i <= N / 2; i++),for (int i = N; i >= 1; i--),,2,,"[Scenario: Efficient Prime Number Filter]
+Which loop boundary tests if integer $N > 1$ is prime with optimal $O(\sqrt{N})$ efficiency?",
+DSA,Case Study,"[Scenario: Customer Rating Frequency Counter] A kiosk records ratings 1 to 5. Using frequency array int freq[6] = {0}; , how is rating r recorded?",freq[r] = freq[r] + 1;,freq[0] = freq[0] + r;,freq[r] = r;,freq[r++] = 0;,,2,,"[Scenario: Customer Rating Frequency Counter]
+A kiosk records ratings 1 to 5.",
+DSA,Case Study,"[Scenario: Duplicate Detector in Sorted List] In an already sorted array of size $N$, how quickly can duplicates be detected?",In O(N) time by checking adjacent pairs arr[i] == arr[i+1],In O(N^2) time only,In O(1) time,Cannot be detected,,2,,"[Scenario: Duplicate Detector in Sorted List]
+In an already sorted array of size $N$, how quickly can duplicates be detected?",
+DSA,Case Study,[Scenario: Binary Search Infinite Loop Bug] Why does using low = mid; without + 1 cause an infinite loop in Binary Search when high - low == 1 ?,Array size is odd,"Integer division rounds down, keeping mid equal to low and never advancing boundaries",Array has zeros,Target is at index 0,,2,,"[Scenario: Binary Search Infinite Loop Bug]
+Why does using low = mid; without + 1 cause an infinite loop in Binary Search when high - low == 1 ?",
+DSA,Case Study,[Scenario: Stack Overflow in Recursive Sum] What happens when calling sum(5) with definition int sum(int n) { return n + sum(n - 1); } ?,Returns 15,Causes Stack Overflow due to the absence of a terminating base case,Returns 0,Returns 5,,2,,"[Scenario: Stack Overflow in Recursive Sum]
+What happens when calling sum(5) with definition int sum(int n) { return n + sum(n - 1); } ?",
+DSA,Case Study,"[Scenario: Array Element Shift for Deletion] To delete element at index k in an array of size $N$, how should elements shift?",for (int i = k; i < N - 1; i++) arr[i] = arr[i + 1];,for (int i = N - 1; i > k; i--) arr[i] = arr[i - 1];,arr[k] = 0;,for (int i = 0; i < k; i++) arr[i] = arr[i + 1];,,2,,"[Scenario: Array Element Shift for Deletion]
+To delete element at index k in an array of size $N$, how should elements shift?",

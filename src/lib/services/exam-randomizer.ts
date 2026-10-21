@@ -65,16 +65,34 @@ export interface RandomizedExamPayload {
  */
 export async function getDeterministicExamQuestions(
   attemptSeed: string,
-  options?: { shuffleOptions?: boolean }
+  options?: { shuffleOptions?: boolean; track?: string }
 ): Promise<RandomizedExamPayload> {
   const shouldShuffleOptions = options?.shuffleOptions ?? true;
   const seedString = attemptSeed || "lnmcbm_default_seed";
+  const targetTrack = options?.track;
 
   // Fetch only active questions from the question bank
-  const { questions: rawQuestions } = await getQuestions({ status: "active" });
+  const { questions: rawQuestions } = await getQuestions({
+    status: "active",
+    track: targetTrack,
+  });
 
   // Filter only active questions
-  const activeQuestions = rawQuestions.filter((q) => q.is_active);
+  let activeQuestions = rawQuestions.filter((q) => q.is_active);
+
+  if (targetTrack && targetTrack !== "ALL") {
+    activeQuestions = activeQuestions.filter(
+      (q) => !q.track || q.track.toLowerCase() === targetTrack.toLowerCase()
+    );
+  } else if (activeQuestions.length > 40) {
+    // Default to track C when no track is specified
+    const cTrack = activeQuestions.filter((q) => q.track === "C");
+    if (cTrack.length === 40) {
+      activeQuestions = cTrack;
+    } else {
+      activeQuestions = activeQuestions.slice(0, 40);
+    }
+  }
 
   // Group questions by category so we can either shuffle within categories or across the entire exam
   // Here we shuffle within the overall active pool deterministically
@@ -110,6 +128,7 @@ export async function getDeterministicExamQuestions(
       // Security guarantee: Strictly exclude correct_option_key, correct_option_id, and explanation
       return {
         id: q.id,
+        track: q.track,
         category: q.category,
         question_text: q.question_text,
         code_snippet: q.code_snippet || null,

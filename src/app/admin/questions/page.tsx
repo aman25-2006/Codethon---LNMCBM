@@ -41,6 +41,7 @@ export default function AdminQuestionsPage() {
 
   // Filters
   const [search, setSearch] = React.useState("");
+  const [trackFilter, setTrackFilter] = React.useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = React.useState<string>("ALL");
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
 
@@ -57,6 +58,7 @@ export default function AdminQuestionsPage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (search.trim()) params.set("search", search.trim());
+      if (trackFilter !== "ALL") params.set("track", trackFilter);
       if (categoryFilter !== "ALL") params.set("category", categoryFilter);
       if (statusFilter !== "ALL") params.set("status", statusFilter);
 
@@ -70,7 +72,7 @@ export default function AdminQuestionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter, statusFilter]);
+  }, [search, trackFilter, categoryFilter, statusFilter]);
 
   React.useEffect(() => {
     fetchQuestions();
@@ -80,7 +82,8 @@ export default function AdminQuestionsPage() {
   const handleSeedCurriculum = async () => {
     try {
       setSeeding(true);
-      const res = await fetch("/api/admin/questions/seed", { method: "POST" });
+      const url = trackFilter !== "ALL" ? `/api/admin/questions/seed?track=${encodeURIComponent(trackFilter)}` : "/api/admin/questions/seed";
+      const res = await fetch(url, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to seed curriculum.");
       await fetchQuestions();
@@ -388,6 +391,20 @@ export default function AdminQuestionsPage() {
 
             <div className="flex flex-wrap items-center gap-2">
               <select
+                value={trackFilter}
+                onChange={(e) => setTrackFilter(e.target.value)}
+                className="h-9 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-blue-700 bg-blue-50/50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="ALL">All Tracks (240 Qs)</option>
+                <option value="C">Section A: C Programming (40 Qs)</option>
+                <option value="C++">Section B: C++ (40 Qs)</option>
+                <option value="Java">Section C: Java (40 Qs)</option>
+                <option value="Python">Section D: Python (40 Qs)</option>
+                <option value="Web Development">Section E: Web Dev (40 Qs)</option>
+                <option value="DSA">Section F: DSA (40 Qs)</option>
+              </select>
+
+              <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="h-9 px-3 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -460,9 +477,14 @@ export default function AdminQuestionsPage() {
                       </td>
 
                       <td className="py-3 px-3">
-                        <Badge variant="outline" className="text-[10px] whitespace-nowrap font-medium">
-                          {q.category}
-                        </Badge>
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant="outline" className="text-[10px] whitespace-nowrap font-bold text-blue-700 bg-blue-50 border-blue-200">
+                            {q.track || "C"}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] whitespace-nowrap font-medium text-slate-600">
+                            {q.category}
+                          </Badge>
+                        </div>
                       </td>
 
                       <td className="py-3 px-3 max-w-md">

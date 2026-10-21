@@ -22,8 +22,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     // Student can provide an attemptId or session seed; defaults to candidate ID
     const seed = searchParams.get("attemptId") || auth.student.id;
+    const track = searchParams.get("track") || undefined;
 
-    const exam = await getDeterministicExamQuestions(seed, { shuffleOptions: true });
+    const exam = await getDeterministicExamQuestions(seed, { shuffleOptions: true, track });
 
     // Extra runtime safety audit: Ensure NO answer key fields exist in student payload
     exam.questions.forEach((q) => {

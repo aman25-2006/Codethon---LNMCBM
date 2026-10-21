@@ -20,8 +20,9 @@ export async function GET(request: Request) {
     const search = searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
     const status = searchParams.get("status") || "";
+    const track = searchParams.get("track") || "";
 
-    const data = await getQuestions({ search, category, status });
+    const data = await getQuestions({ search, category, status, track });
     return NextResponse.json({ success: true, ...data });
   } catch (error: unknown) {
     console.error("GET /api/admin/questions error:", error);
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const {
+      track,
       category,
       question_text,
       code_snippet,
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
     } = body;
 
     const question = await createQuestion({
+      track,
       category,
       question_text,
       code_snippet,

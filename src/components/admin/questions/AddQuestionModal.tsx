@@ -18,6 +18,7 @@ export function AddQuestionModal({
   onSuccess,
   defaultCategory = "Fundamentals",
 }: AddQuestionModalProps) {
+  const [track, setTrack] = React.useState<string>("C");
   const [category, setCategory] = React.useState<MCQCategory>(defaultCategory);
   const [questionText, setQuestionText] = React.useState("");
   const [codeSnippet, setCodeSnippet] = React.useState("");
@@ -67,6 +68,7 @@ export function AddQuestionModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          track,
           category,
           question_text: questionText.trim(),
           code_snippet: codeSnippet.trim() || null,
@@ -135,8 +137,24 @@ export function AddQuestionModal({
             </div>
           )}
 
-          {/* Category & Marks */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Track, Category & Marks */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Track *</label>
+              <select
+                value={track}
+                onChange={(e) => setTrack(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-semibold text-blue-700 bg-blue-50/40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="C">C</option>
+                <option value="C++">C++</option>
+                <option value="Java">Java</option>
+                <option value="Python">Python</option>
+                <option value="Web Development">Web Dev</option>
+                <option value="DSA">DSA</option>
+              </select>
+            </div>
+
             <div className="sm:col-span-2 space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">Category *</label>
               <select
@@ -144,10 +162,10 @@ export function AddQuestionModal({
                 onChange={(e) => setCategory(e.target.value as MCQCategory)}
                 className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="Fundamentals">Fundamentals (1 Mark each, 10Q = 10M)</option>
-                <option value="Technical Understanding">Technical Understanding (2 Marks each, 10Q = 20M)</option>
-                <option value="Logic and Debugging">Logic and Debugging (3 Marks each, 10Q = 30M)</option>
-                <option value="Case Study">Case Study (2 Marks each, 10Q = 20M)</option>
+                <option value="Fundamentals">Fundamentals (1M)</option>
+                <option value="Technical Understanding">Technical Understanding (2M)</option>
+                <option value="Logic and Debugging">Logic and Debugging (3M)</option>
+                <option value="Case Study">Case Study (2M)</option>
               </select>
             </div>
 

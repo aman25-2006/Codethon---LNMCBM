@@ -18,6 +18,7 @@ export function EditQuestionModal({
   onClose,
   onSuccess,
 }: EditQuestionModalProps) {
+  const [track, setTrack] = React.useState<string>("C");
   const [category, setCategory] = React.useState<MCQCategory>("Fundamentals");
   const [questionText, setQuestionText] = React.useState("");
   const [codeSnippet, setCodeSnippet] = React.useState("");
@@ -37,6 +38,7 @@ export function EditQuestionModal({
   // Populate from question prop
   React.useEffect(() => {
     if (question) {
+      setTrack(question.track || "C");
       setCategory(question.category);
       setQuestionText(question.question_text || "");
       setCodeSnippet(question.code_snippet || "");
@@ -84,6 +86,7 @@ export function EditQuestionModal({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          track,
           category,
           question_text: questionText.trim(),
           code_snippet: codeSnippet.trim() || null,
@@ -143,8 +146,24 @@ export function EditQuestionModal({
             </div>
           )}
 
-          {/* Category & Marks */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Track, Category & Marks */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700">Track *</label>
+              <select
+                value={track}
+                onChange={(e) => setTrack(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs font-semibold text-blue-700 bg-blue-50/40 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="C">C</option>
+                <option value="C++">C++</option>
+                <option value="Java">Java</option>
+                <option value="Python">Python</option>
+                <option value="Web Development">Web Dev</option>
+                <option value="DSA">DSA</option>
+              </select>
+            </div>
+
             <div className="sm:col-span-2 space-y-1.5">
               <label className="text-xs font-semibold text-slate-700">Category *</label>
               <select
