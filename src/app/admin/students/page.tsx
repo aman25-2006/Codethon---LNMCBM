@@ -20,11 +20,19 @@ import {
   Loader2,
   AlertCircle,
   Mail,
+  FileText,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileImage,
+  X,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StudentRecord, StudentMetrics } from "@/lib/services/students-service";
+import { StudentRegistrationRecord, RegistrationMetrics } from "@/lib/services/registration-service";
 import { AddStudentModal } from "@/components/admin/students/AddStudentModal";
 import { EditStudentModal } from "@/components/admin/students/EditStudentModal";
 import { StudentDetailsModal } from "@/components/admin/students/StudentDetailsModal";
@@ -43,6 +51,9 @@ const STATUS_OPTIONS = [
 ];
 
 export default function AdminStudentsPage() {
+  const [activeTab, setActiveTab] = React.useState<"roster" | "registrations">("roster");
+
+  // Roster State
   const [students, setStudents] = React.useState<StudentRecord[]>([]);
   const [metrics, setMetrics] = React.useState<StudentMetrics>({
     total: 0,
@@ -54,12 +65,35 @@ export default function AdminStudentsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Filters
+  // Filters for Roster
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedCourse, setSelectedCourse] = React.useState("ALL");
   const [selectedStatus, setSelectedStatus] = React.useState("ALL");
 
-  // Modals
+  // Registration Requests State
+  const [registrations, setRegistrations] = React.useState<StudentRegistrationRecord[]>([]);
+  const [regMetrics, setRegMetrics] = React.useState<RegistrationMetrics>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
+  const [isRegLoading, setIsRegLoading] = React.useState(false);
+  const [regSearchQuery, setRegSearchQuery] = React.useState("");
+  const [regStatusFilter, setRegStatusFilter] = React.useState("all");
+
+  // Selected ID Card for Modal Preview
+  const [selectedRegForIdPreview, setSelectedRegForIdPreview] =
+    React.useState<StudentRegistrationRecord | null>(null);
+
+  // Processing action state for specific registration ID
+  const [processingRegId, setProcessingRegId] = React.useState<string | null>(null);
+  const [regActionMessage, setRegActionMessage] = React.useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  // Modals for Roster
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [isImportOpen, setIsImportOpen] = React.useState(false);
   const [selectedStudentForView, setSelectedStudentForView] = React.useState<StudentRecord | null>(null);
@@ -107,9 +141,36 @@ export default function AdminStudentsPage() {
     }
   }, [searchQuery, selectedCourse, selectedStatus]);
 
+  // Fetch registration requests
+  const fetchRegistrations = React.useCallback(async () => {
+    setIsRegLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (regStatusFilter !== "all") params.set("status", regStatusFilter);
+      if (regSearchQuery.trim()) params.set("search", regSearchQuery.trim());
+
+      const res = await fetch(`/api/admin/registrations?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRegistrations(data.registrations || []);
+        if (data.metrics) {
+          setRegMetrics(data.metrics);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load registrations:", err);
+    } finally {
+      setIsRegLoading(false);
+    }
+  }, [regStatusFilter, regSearchQuery]);
+
   React.useEffect(() => {
     fetchStudents();
   }, [fetchStudents]);
+
+  React.useEffect(() => {
+    fetchRegistrations();
+  }, [fetchRegistrations]);
 
   // Toggle active status
   const handleToggleStatus = async () => {
@@ -139,52 +200,116 @@ export default function AdminStudentsPage() {
       const res = await fetch(`/api/admin/students/${confirmDeleteStudent.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete student record.");
+      if (!res.ok) throw new Error("Failed to delete candidate.");
       await fetchStudents();
       setConfirmDeleteStudent(null);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Action failed");
+      alert(err instanceof Error ? err.message : "Delete failed");
     } finally {
       setIsActionLoading(false);
     }
   };
 
-  // Export filtered students as CSV
-  const handleExportCSV = () => {
-    if (students.length === 0) {
-      alert("No student records available to export.");
-      return;
+  // Handle Approve Registration Request
+  const handleApproveRegistration = async (registration: StudentRegistrationRecord) => {
+    setProcessingRegId(registration.id);
+    setRegActionMessage(null);
+    try {
+      const res = await fetch(`/api/admin/registrations/${registration.id}/approve`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to approve registration.");
+      }
+
+      setRegActionMessage({
+        type: "success",
+        text: `Registration for ${registration.full_name} (${registration.roll_number}) approved! Credentials have been sent to ${registration.email}.`,
+      });
+
+      // Refresh both registrations and students roster
+      await fetchRegistrations();
+      await fetchStudents();
+      setSelectedRegForIdPreview(null);
+    } catch (err: unknown) {
+      setRegActionMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Approval failed.",
+      });
+    } finally {
+      setProcessingRegId(null);
     }
+  };
 
+  // Handle Reject Registration Request
+  const handleRejectRegistration = async (registration: StudentRegistrationRecord) => {
+    const reason = window.prompt(
+      `Enter reason for rejecting registration of ${registration.full_name}:`,
+      "College ID Card photo is illegible or does not match entered roll number."
+    );
+    if (reason === null) return; // user cancelled
+
+    setProcessingRegId(registration.id);
+    setRegActionMessage(null);
+    try {
+      const res = await fetch(`/api/admin/registrations/${registration.id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reject registration.");
+      }
+
+      setRegActionMessage({
+        type: "success",
+        text: `Registration for ${registration.full_name} has been marked as rejected.`,
+      });
+
+      await fetchRegistrations();
+      setSelectedRegForIdPreview(null);
+    } catch (err: unknown) {
+      setRegActionMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Rejection failed.",
+      });
+    } finally {
+      setProcessingRegId(null);
+    }
+  };
+
+  // Export CSV
+  const handleExportCSV = () => {
+    if (students.length === 0) return;
     const headers = [
-      "Participant ID",
-      "Full Name",
       "Roll Number",
-      "Course",
+      "Full Name",
       "Email",
+      "Department",
       "Mobile",
+      "Participant ID",
       "Status",
-      "Auth Setup",
-      "Enrolled At",
+      "Enrolled Date",
     ];
-
-    const csvRows = students.map((s) => [
-      `"${s.participant_id}"`,
-      `"${s.full_name.replace(/"/g, '""')}"`,
+    const rows = students.map((s) => [
       `"${s.roll_number}"`,
-      `"${s.course}"`,
+      `"${s.full_name.replace(/"/g, '""')}"`,
       `"${s.email}"`,
-      `"${s.mobile || ""}"`,
-      `"${s.is_active ? "Active" : "Suspended"}"`,
-      `"${s.auth_user_id ? "Configured" : "Pending"}"`,
-      `"${new Date(s.created_at).toISOString()}"`,
+      `"${s.course}"`,
+      `"${s.mobile || "N/A"}"`,
+      `"${s.participant_id}"`,
+      s.is_active ? "Active" : "Suspended",
+      `"${new Date(s.created_at).toLocaleDateString()}"`,
     ]);
 
-    const csvContent = [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\r\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.href = url;
+    link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
       `lnmcbm_candidate_roster_${new Date().toISOString().split("T")[0]}.csv`
@@ -193,8 +318,6 @@ export default function AdminStudentsPage() {
     link.click();
     document.body.removeChild(link);
   };
-
-  const hasActiveFilters = searchQuery !== "" || selectedCourse !== "ALL" || selectedStatus !== "ALL";
 
   return (
     <div className="space-y-6">
@@ -207,10 +330,10 @@ export default function AdminStudentsPage() {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Student Management & Candidate Directory
+            Student Management &amp; Candidate Directory
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Enroll students manually, bulk-import via CSV, filter, edit records, and export roster data.
+            Manage enrolled students, review self-registration requests, approve ID credentials, and export records.
           </p>
         </div>
 
@@ -247,17 +370,8 @@ export default function AdminStudentsPage() {
             disabled={students.length === 0}
           >
             <KeyRound className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-            Issue Credentials & Email ({metrics.pendingAuth})
+            Issue Credentials &amp; Email ({metrics.pendingAuth})
           </Button>
-
-          <a
-            href="/api/admin/students/template"
-            download="lnmcbm_student_import_template.csv"
-            className="inline-flex items-center justify-center px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-            CSV Template
-          </a>
 
           <Button
             size="sm"
@@ -292,367 +406,683 @@ export default function AdminStudentsPage() {
         </div>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-xs">
-          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Total Enrolled
-              </p>
-              <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.total}</h3>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
+        <button
+          onClick={() => setActiveTab("roster")}
+          className={`px-4 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+            activeTab === "roster"
+              ? "bg-blue-600 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Enrolled Candidates</span>
+          <span
+            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              activeTab === "roster" ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-700"
+            }`}
+          >
+            {students.length}
+          </span>
+        </button>
 
-        <Card className="border-slate-200 shadow-xs">
-          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                Active Eligible
-              </p>
-              <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.active}</h3>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-xs">
-          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">
-                Suspended / Inactive
-              </p>
-              <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.inactive}</h3>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-xs">
-          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">
-                Pending Auth Setup
-              </p>
-              <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.pendingAuth}</h3>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <KeyRound className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <button
+          onClick={() => setActiveTab("registrations")}
+          className={`px-4 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+            activeTab === "registrations"
+              ? "bg-blue-600 text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Registration Requests</span>
+          {regMetrics.pending > 0 ? (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
+              {regMetrics.pending} PENDING
+            </span>
+          ) : (
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                activeTab === "registrations" ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {regMetrics.total}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Directory Card */}
-      <Card className="border-slate-200 shadow-xs">
-        <CardHeader className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <CardTitle className="text-base font-bold text-slate-900">
-              Candidate Roster
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Showing {students.length} of {metrics.total} registered participants.
-            </CardDescription>
-          </div>
-
-          {/* Search & Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[200px] sm:min-w-[240px]">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search name, roll, email..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            <select
-              value={selectedCourse}
-              onChange={(e) => setSelectedCourse(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-            >
-              {COURSES.map((c) => (
-                <option key={c} value={c}>
-                  {c === "ALL" ? "All Departments" : c}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-
-            {hasActiveFilters && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCourse("ALL");
-                  setSelectedStatus("ALL");
-                }}
-                className="text-xs text-slate-500 hover:text-slate-800 px-2 h-8"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Reset
-              </Button>
+      {/* Feedback Alert for Registration Action */}
+      {regActionMessage && (
+        <div
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${
+            regActionMessage.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-rose-50 border-rose-200 text-rose-800"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {regActionMessage.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
+            <span>{regActionMessage.text}</span>
           </div>
-        </CardHeader>
+          <button
+            onClick={() => setRegActionMessage(null)}
+            className="text-slate-400 hover:text-slate-600 p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
-        <CardContent className="p-0">
-          {error && (
-            <div className="m-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center justify-between">
+      {/* ========================================================================= */}
+      {/* TAB 1: ENROLLED CANDIDATE ROSTER */}
+      {/* ========================================================================= */}
+      {activeTab === "roster" && (
+        <>
+          {/* Metrics Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-slate-200 shadow-xs">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Total Enrolled
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.total}</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Users className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-xs">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                    Active Eligible
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.active}</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-xs">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">
+                    Suspended / Inactive
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.inactive}</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-xs">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">
+                    Pending Auth Setup
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{metrics.pendingAuth}</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Directory Card */}
+          <Card className="border-slate-200 shadow-xs">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Candidate Roster
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Showing {students.length} of {metrics.total} registered participants.
+                </CardDescription>
+              </div>
+
+              {/* Search & Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[200px] sm:min-w-[240px]">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search name, roll, email..."
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+
+                <select
+                  value={selectedCourse}
+                  onChange={(e) => setSelectedCourse(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                >
+                  {COURSES.map((c) => (
+                    <option key={c} value={c}>
+                      {c === "ALL" ? "All Departments" : c}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="p-12 text-center text-slate-400">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                  <p className="text-xs">Loading candidate roster...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center text-rose-600 text-xs">
+                  <AlertCircle className="w-5 h-5 mx-auto mb-2" />
+                  <p>{error}</p>
+                </div>
+              ) : students.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs">
+                  <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                  <p className="font-semibold text-slate-700">No candidates found.</p>
+                  <p className="text-slate-400 mt-1">Enroll students manually or import via CSV.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Candidate</th>
+                        <th className="py-3 px-4">Participant ID</th>
+                        <th className="py-3 px-4">Department / Program</th>
+                        <th className="py-3 px-4">Email Address</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {students.map((student) => (
+                        <tr key={student.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-slate-900">{student.full_name}</div>
+                            <div className="font-mono text-[11px] text-slate-500">
+                              {student.roll_number}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                              {student.participant_id}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-700">{student.course}</td>
+                          <td className="py-3 px-4 font-mono text-[11px] text-slate-600">
+                            {student.email}
+                          </td>
+                          <td className="py-3 px-4">
+                            {student.is_active ? (
+                              <Badge variant="success" className="text-[10px]">
+                                Active Eligible
+                              </Badge>
+                            ) : (
+                              <Badge variant="danger" className="text-[10px]">
+                                Suspended
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setCredentialsTargetStudent(student);
+                                  setIsCredentialsOpen(true);
+                                }}
+                                className="h-7 px-2 text-[11px] text-emerald-700 hover:bg-emerald-50"
+                                title="Issue / Reset Credentials"
+                              >
+                                <KeyRound className="w-3.5 h-3.5" />
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedStudentForView(student)}
+                                className="h-7 px-2 text-[11px]"
+                                title="View Details"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedStudentForEdit(student)}
+                                className="h-7 px-2 text-[11px]"
+                                title="Edit Record"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setConfirmToggleStudent(student)}
+                                className={`h-7 px-2 text-[11px] ${
+                                  student.is_active
+                                    ? "text-amber-600 hover:bg-amber-50"
+                                    : "text-emerald-600 hover:bg-emerald-50"
+                                }`}
+                                title={student.is_active ? "Suspend Student" : "Activate Student"}
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setConfirmDeleteStudent(student)}
+                                className="h-7 px-2 text-[11px] text-rose-600 hover:bg-rose-50"
+                                title="Delete Candidate"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: CANDIDATE SELF-REGISTRATION REQUESTS & ID VERIFICATION */}
+      {/* ========================================================================= */}
+      {activeTab === "registrations" && (
+        <>
+          {/* Registration Metrics */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-slate-200 shadow-xs">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Total Submissions
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{regMetrics.total}</h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-amber-200 shadow-xs bg-amber-50/20">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-amber-600 uppercase tracking-wider">
+                    Pending Verification
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-amber-700 mt-1">
+                    {regMetrics.pending}
+                  </h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <Clock className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-emerald-200 shadow-xs bg-emerald-50/20">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                    Approved &amp; Emailed
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-emerald-700 mt-1">
+                    {regMetrics.approved}
+                  </h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-rose-200 shadow-xs bg-rose-50/20">
+              <CardContent className="p-4 sm:p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">
+                    Rejected
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-rose-700 mt-1">
+                    {regMetrics.rejected}
+                  </h3>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+                  <XCircle className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Registration Requests Table */}
+          <Card className="border-slate-200 shadow-xs">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-base font-bold text-slate-900">
+                  Candidate Self-Registrations &amp; ID Proofs
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Review submitted college ID photos and approve login credentials for candidates.
+                </CardDescription>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[200px] sm:min-w-[240px]">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={regSearchQuery}
+                    onChange={(e) => setRegSearchQuery(e.target.value)}
+                    placeholder="Search candidate, roll, email..."
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <select
+                  value={regStatusFilter}
+                  onChange={(e) => setRegStatusFilter(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending Only ({regMetrics.pending})</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {isRegLoading ? (
+                <div className="p-12 text-center text-slate-400">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                  <p className="text-xs">Loading registration requests...</p>
+                </div>
+              ) : registrations.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs">
+                  <FileText className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                  <p className="font-semibold text-slate-700">No registration requests found.</p>
+                  <p className="text-slate-400 mt-1">
+                    When prospective students register via the public portal, their submissions appear here for review.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Candidate Name &amp; Roll</th>
+                        <th className="py-3 px-4">Department &amp; Semester</th>
+                        <th className="py-3 px-4">Contact Info</th>
+                        <th className="py-3 px-4 text-center">College ID Proof</th>
+                        <th className="py-3 px-4">Submission Date</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Approval Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {registrations.map((reg) => (
+                        <tr key={reg.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-slate-900">{reg.full_name}</div>
+                            <div className="font-mono text-[11px] text-blue-700 font-bold">
+                              {reg.roll_number}
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <div className="text-slate-800 font-semibold">{reg.department}</div>
+                            <div className="text-[11px] text-slate-500">{reg.semester}</div>
+                          </td>
+
+                          <td className="py-3 px-4">
+                            <div className="font-mono text-[11px] text-slate-700">{reg.email}</div>
+                            <div className="font-mono text-[11px] text-slate-500">{reg.mobile}</div>
+                          </td>
+
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => setSelectedRegForIdPreview(reg)}
+                              className="group inline-flex flex-col items-center gap-1 p-1 rounded-lg border border-slate-200 bg-white hover:border-blue-500 hover:shadow-xs transition-all"
+                            >
+                              <div className="w-12 h-10 rounded bg-slate-100 overflow-hidden relative border border-slate-200">
+                                <img
+                                  src={reg.id_card_data}
+                                  alt="ID Thumbnail"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                />
+                              </div>
+                              <span className="text-[10px] text-blue-600 font-semibold group-hover:underline">
+                                Inspect ID
+                              </span>
+                            </button>
+                          </td>
+
+                          <td className="py-3 px-4 text-slate-500 text-[11px]">
+                            {new Date(reg.created_at).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+
+                          <td className="py-3 px-4">
+                            {reg.status === "pending" ? (
+                              <Badge variant="warning" className="text-[10px]">
+                                Pending Review
+                              </Badge>
+                            ) : reg.status === "approved" ? (
+                              <Badge variant="success" className="text-[10px]">
+                                Approved &amp; Sent
+                              </Badge>
+                            ) : (
+                              <Badge variant="danger" className="text-[10px]">
+                                Rejected
+                              </Badge>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-4 text-right">
+                            {reg.status === "pending" ? (
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  disabled={processingRegId === reg.id}
+                                  onClick={() => handleApproveRegistration(reg)}
+                                  className="h-8 px-3 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs"
+                                >
+                                  {processingRegId === reg.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Approve &amp; Send Credentials</span>
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={processingRegId === reg.id}
+                                  onClick={() => handleRejectRegistration(reg)}
+                                  className="h-8 px-2.5 text-[11px] text-rose-600 hover:bg-rose-50 hover:border-rose-200"
+                                >
+                                  <XCircle className="w-3.5 h-3.5 mr-1" />
+                                  Reject
+                                </Button>
+                              </div>
+                            ) : reg.status === "approved" ? (
+                              <div className="flex items-center justify-end gap-1 text-[11px] text-emerald-700 font-semibold">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                Credentials Dispatched
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-rose-600 font-medium">
+                                {reg.rejection_reason || "Rejected"}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ID CARD FULL PREVIEW MODAL */}
+      {/* ========================================================================= */}
+      {selectedRegForIdPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                <span>{error}</span>
+                <FileImage className="w-4 h-4 text-blue-600" />
+                <h3 className="text-xs font-bold text-slate-800">
+                  College ID Card Proof: {selectedRegForIdPreview.full_name} ({selectedRegForIdPreview.roll_number})
+                </h3>
               </div>
-              <Button size="sm" variant="outline" onClick={fetchStudents} className="text-xs">
-                Retry
-              </Button>
+              <button
+                onClick={() => setSelectedRegForIdPreview(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          )}
 
-          {isLoading ? (
-            <div className="py-16 text-center space-y-3">
-              <Loader2 className="w-6 h-6 text-blue-600 animate-spin mx-auto" />
-              <p className="text-xs font-semibold text-slate-500">
-                Loading candidate directory...
-              </p>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="py-16 text-center space-y-3 px-4">
-              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto text-blue-600">
-                <Users className="w-6 h-6" />
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              {/* Candidate Info Summary Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 border border-slate-200 p-3 rounded-xl text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase block">Name</span>
+                  <strong className="text-slate-900 truncate block">
+                    {selectedRegForIdPreview.full_name}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase block">Roll No</span>
+                  <strong className="font-mono text-blue-700 block">
+                    {selectedRegForIdPreview.roll_number}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase block">Department</span>
+                  <strong className="text-slate-800 block truncate">
+                    {selectedRegForIdPreview.department}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase block">Semester</span>
+                  <strong className="text-slate-800 block">
+                    {selectedRegForIdPreview.semester}
+                  </strong>
+                </div>
               </div>
-              <h4 className="text-sm font-bold text-slate-800">
-                {hasActiveFilters ? "No matching candidates found" : "No candidates enrolled yet"}
-              </h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                {hasActiveFilters
-                  ? "Try adjusting your search query, department, or participation status filters."
-                  : "Upload a CSV file containing student records or register candidates individually to build your competition roster."}
-              </p>
-              <div className="pt-2 flex items-center justify-center gap-2">
-                {hasActiveFilters ? (
+
+              {/* ID Photo Display */}
+              <div className="border-2 border-slate-200 rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center min-h-[300px] max-h-[460px] p-2">
+                <img
+                  src={selectedRegForIdPreview.id_card_data}
+                  alt="Student ID Card"
+                  className="max-h-[440px] max-w-full object-contain rounded"
+                />
+              </div>
+
+              <div className="text-[11px] text-slate-500 text-center">
+                Candidate Email: <strong className="text-slate-800">{selectedRegForIdPreview.email}</strong> &bull; Mobile: <strong className="text-slate-800">{selectedRegForIdPreview.mobile}</strong>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedRegForIdPreview(null)}
+                className="text-xs"
+              >
+                Close Preview
+              </Button>
+
+              {selectedRegForIdPreview.status === "pending" && (
+                <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedCourse("ALL");
-                      setSelectedStatus("ALL");
-                    }}
-                    className="text-xs"
+                    disabled={processingRegId === selectedRegForIdPreview.id}
+                    onClick={() => handleRejectRegistration(selectedRegForIdPreview)}
+                    className="text-xs text-rose-600 hover:bg-rose-50"
                   >
-                    Clear Filters
+                    Reject ID Proof
                   </Button>
-                ) : (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => setIsImportOpen(true)}
-                      className="text-xs"
-                    >
-                      <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
-                      Import CSV Roster
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsAddOpen(true)}
-                      className="text-xs"
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1.5" />
-                      Add First Student
-                    </Button>
-                  </>
-                )}
-              </div>
+
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    disabled={processingRegId === selectedRegForIdPreview.id}
+                    onClick={() => handleApproveRegistration(selectedRegForIdPreview)}
+                    className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
+                  >
+                    {processingRegId === selectedRegForIdPreview.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    Approve &amp; Send Login Credentials
+                  </Button>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-50/80 text-slate-600 border-b border-slate-200 font-semibold uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="py-3 px-4">Participant ID</th>
-                    <th className="py-3 px-4">Candidate Name</th>
-                    <th className="py-3 px-4">Roll Number</th>
-                    <th className="py-3 px-4">Course</th>
-                    <th className="py-3 px-4">Email & Contact</th>
-                    <th className="py-3 px-4">Exam Status</th>
-                    <th className="py-3 px-4">Auth Account</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-blue-700 whitespace-nowrap">
-                        <span className="bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                          {student.participant_id}
-                        </span>
-                      </td>
+          </div>
+        </div>
+      )}
 
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-900 block truncate max-w-[160px]">
-                          {student.full_name}
-                        </span>
-                        <span className="text-[10px] text-slate-400 block">
-                          Enrolled: {new Date(student.created_at).toLocaleDateString()}
-                        </span>
-                      </td>
-
-                      <td className="py-3 px-4 font-mono font-semibold text-slate-800 whitespace-nowrap">
-                        {student.roll_number}
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <Badge variant="outline" className="text-[10px] py-0 font-medium bg-slate-50">
-                          {student.course}
-                        </Badge>
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <span className="text-slate-700 block truncate max-w-[180px]">
-                          {student.email}
-                        </span>
-                        {student.mobile ? (
-                          <span className="text-[10px] text-slate-400 block font-mono">
-                            {student.mobile}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 block italic">
-                            No mobile
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {student.is_active ? (
-                          <span className="inline-flex items-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
-                            Suspended
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {student.auth_user_id ? (
-                          <button
-                            onClick={() => {
-                              setCredentialsTargetStudent(student);
-                              setIsCredentialsOpen(true);
-                            }}
-                            className="inline-flex items-center text-[11px] text-emerald-700 hover:text-emerald-800 font-medium hover:underline"
-                            title="Click to rotate credentials or resend email"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-                            Configured ↺
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setCredentialsTargetStudent(student);
-                              setIsCredentialsOpen(true);
-                            }}
-                            className="inline-flex items-center text-[11px] text-amber-700 hover:text-amber-800 font-semibold bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200"
-                            title="Generate credentials for this candidate"
-                          >
-                            <KeyRound className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                            Issue Pass
-                          </button>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => {
-                              setCredentialsTargetStudent(student);
-                              setIsCredentialsOpen(true);
-                            }}
-                            title="Issue / Reissue Credentials & Send Email"
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
-                          >
-                            <KeyRound className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => setSelectedStudentForView(student)}
-                            title="View Full Profile"
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => setSelectedStudentForEdit(student)}
-                            title="Edit Record"
-                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => setConfirmToggleStudent(student)}
-                            title={student.is_active ? "Suspend Participation" : "Re-activate Candidate"}
-                            className={`p-1.5 rounded-md transition-colors ${
-                              student.is_active
-                                ? "text-slate-400 hover:text-amber-600 hover:bg-amber-50"
-                                : "text-emerald-600 hover:bg-emerald-50"
-                            }`}
-                          >
-                            {student.is_active ? (
-                              <ShieldAlert className="w-3.5 h-3.5" />
-                            ) : (
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-
-                          <button
-                            onClick={() => setConfirmDeleteStudent(student)}
-                            title="Remove Candidate"
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Modals & Dialogs */}
+      {/* Modals & Dialogs for Roster */}
       <AddStudentModal
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}

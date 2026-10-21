@@ -488,9 +488,9 @@ export default function AdminResultsPage() {
 
       {/* Scorecard Preview Modal */}
       {selectedResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto no-print">
-          <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:fixed print:inset-0">
+          <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col print:border-none print:shadow-none print:max-w-none print:max-h-none print:m-0 print:p-0 print:overflow-visible">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 no-print print:hidden">
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-blue-700" />
                 <h3 className="text-xs font-bold text-slate-800">
@@ -505,7 +505,7 @@ export default function AdminResultsPage() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-6 overflow-y-auto flex-1 print:p-0 print:overflow-visible">
               <OfficialScorecard
                 scorecard={{
                   student_name: selectedResult.student_name,

@@ -34,6 +34,7 @@ import {
 import { StudentRecord, getStudents, getStudentById } from "./students-service";
 import { AdminResultItemDTO, PublicScorecardDTO, VerificationResultDTO } from "@/types";
 import { getCompetitionSettings } from "./settings-service";
+import { sendScorecardEmail, ScorecardEmailPayload } from "@/lib/email/email-service";
 
 export const DEFAULT_WARNING_THRESHOLD = 3;
 export const MONITORING_DEDUPLICATION_WINDOW_MS = 3500;
@@ -1685,6 +1686,19 @@ export async function submitPhase2Problem(
       const res = getLocalResultsStore().find((r) => r.session_id === session.id);
       if (res) res.is_finalized = true;
     }
+
+    // Auto-finalize and trigger immediate official scorecard email to candidate
+    try {
+      await finalizeStudentResult(studentId);
+    } catch (finalizeErr) {
+      console.error("Failed to finalize student result on Phase 2 completion:", finalizeErr);
+    }
+
+    try {
+      await sendScorecardEmailForStudent(studentId);
+    } catch (emailErr) {
+      console.error("Failed to dispatch scorecard email on Phase 2 completion:", emailErr);
+    }
   }
 
   return {
@@ -1760,6 +1774,19 @@ export async function autoSubmitPhase2OnExpiry(studentId: string): Promise<void>
     session.status = "phase2_completed";
     session.phase2_submitted_at = nowIso;
     session.last_activity_at = nowIso;
+  }
+
+  // Auto-finalize and trigger immediate official scorecard email to candidate
+  try {
+    await finalizeStudentResult(studentId);
+  } catch (finalizeErr) {
+    console.error("Failed to finalize result on autoSubmitPhase2OnExpiry:", finalizeErr);
+  }
+
+  try {
+    await sendScorecardEmailForStudent(studentId);
+  } catch (emailErr) {
+    console.error("Failed to dispatch scorecard email on autoSubmitPhase2OnExpiry:", emailErr);
   }
 }
 
@@ -2598,6 +2625,78 @@ export function generateResultsCsv(results: AdminResultItemDTO[]): string {
   const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((row) => row.join(","))].join("\r\n");
   return csvContent;
 }
+
+/**
+ * Dispatches the official scorecard email to a student immediately.
+ * Fetches finalized results and transmits via lnmcbmhackathoncell@gmail.com.
+ */
+export async function sendScorecardEmailForStudent(
+  studentId: string
+): Promise<{ success: boolean; message: string; messageId?: string; error?: string }> {
+  try {
+    const student = await getStudentById(studentId);
+    if (!student || !student.email) {
+      return {
+        success: false,
+        message: "Student record or email address not found.",
+        error: "NO_EMAIL",
+      };
+    }
+
+    let result: any = null;
+    if (isSupabaseLive()) {
+      const admin = createAdminClient();
+      const { data } = await admin
+        .from("final_results")
+        .select("*")
+        .eq("student_id", studentId)
+        .maybeSingle();
+      result = data;
+    } else {
+      result = getLocalResultsStore().find((r) => r.student_id === studentId);
+    }
+
+    if (!result || !result.is_finalized) {
+      result = await finalizeStudentResult(studentId, { force: true });
+    }
+
+    const payload: ScorecardEmailPayload = {
+      studentName: student.full_name,
+      rollNumber: student.roll_number,
+      email: student.email,
+      participantId: student.participant_id,
+      course: student.course,
+      competitionName: "Codethon 2026",
+      phase1Score: Number(result.phase1_score) || 0,
+      codingQ1Score: Number(result.coding_q1_score) || 0,
+      codingQ2Score: Number(result.coding_q2_score) || 0,
+      totalScore: Number(result.total_score) || 0,
+      rank: result.rank ?? null,
+      verificationId: result.verification_id || generateVerificationId(studentId),
+      finalizedAt: result.finalized_at || new Date().toISOString(),
+      portalUrl: process.env.NEXT_PUBLIC_APP_URL || "https://codethon-lnmcbm.vercel.app",
+    };
+
+    const dispatch = await sendScorecardEmail(payload);
+
+    return {
+      success: dispatch.success,
+      message: dispatch.success
+        ? `Official scorecard successfully dispatched to ${student.email}.`
+        : `Scorecard dispatch failed: ${dispatch.error || "Unknown error"}`,
+      messageId: dispatch.messageId,
+      error: dispatch.error,
+    };
+  } catch (err: unknown) {
+    console.error("sendScorecardEmailForStudent failed:", err);
+    return {
+      success: false,
+      message: "Internal error during scorecard dispatch.",
+      error: err instanceof Error ? err.message : "Internal error",
+    };
+  }
+}
+
 
 
 

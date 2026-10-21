@@ -35,28 +35,61 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 8mm;
   }
-  body {
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
   }
+
   .no-print,
+  .print\:hidden,
   header,
   nav,
   aside,
-  button:not(.allow-print) {
+  button,
+  .toast,
+  dialog {
     display: none !important;
   }
-  .scorecard-container {
-    border: 2px solid #000000 !important;
-    box-shadow: none !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+
+  /* Isolate the official scorecard document so ONLY it is printed cleanly */
+  body * {
+    visibility: hidden;
+  }
+
+  #official-scorecard-document,
+  #official-scorecard-document * {
+    visibility: visible;
+  }
+
+  #official-scorecard-document {
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
+    padding: 8mm !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
 }
-
-

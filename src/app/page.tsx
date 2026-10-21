@@ -40,10 +40,16 @@ export default function HomePage() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
           <BrandHeader size="md" subtitle="Annual College Coding Competition Portal" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-50 transition-colors shadow-2xs"
+            >
+              Register Now
+            </Link>
             <Link
               href="/login/student"
-              className="inline-flex items-center justify-center text-sm font-semibold px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-colors shadow-sm"
+              className="inline-flex items-center justify-center text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-colors shadow-sm"
             >
               Student Login
               <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -75,7 +81,15 @@ export default function HomePage() {
                   Welcome to the official college coding portal. Registered participants will undergo a two-phase assessment comprising 40 comprehensive technical MCQs followed by 2 practical coding challenges evaluated in real-time.
                 </p>
 
-                <div className="flex flex-wrap gap-4 pt-2">
+                <div className="flex flex-wrap gap-3 sm:gap-4 pt-2">
+                  <Link
+                    href="/register"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 text-white text-base font-semibold hover:bg-emerald-700 shadow-md transition-all hover:shadow-lg"
+                  >
+                    Register for Codethon
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+
                   <Link
                     href="/login/student"
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-700 text-white text-base font-semibold hover:bg-blue-800 shadow-md transition-all hover:shadow-lg"
@@ -88,7 +102,7 @@ export default function HomePage() {
                     href="#exam-structure"
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white border border-slate-300 text-slate-700 text-base font-semibold hover:bg-slate-50 transition-colors"
                   >
-                    View Exam Guidelines
+                    View Guidelines
                   </a>
                 </div>
 

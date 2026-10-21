@@ -132,7 +132,11 @@ export default function StudentScorecardPage() {
 
         {/* Success / Scorecard Display */}
         {!loading && scorecard && (
-          <OfficialScorecard scorecard={scorecard} showPrintButton={true} />
+          <OfficialScorecard
+            scorecard={scorecard}
+            showPrintButton={true}
+            showEmailButton={true}
+          />
         )}
       </div>
     </div>

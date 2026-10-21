@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
-import { Award, CheckCircle2, Printer, QrCode, ShieldCheck } from "lucide-react";
+import { Award, CheckCircle2, Loader2, Mail, Printer, QrCode, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface OfficialScorecardProps {
@@ -23,9 +23,43 @@ export interface OfficialScorecardProps {
     finalized_at?: string | null;
   };
   showPrintButton?: boolean;
+  showEmailButton?: boolean;
 }
 
-export function OfficialScorecard({ scorecard, showPrintButton = true }: OfficialScorecardProps) {
+export function OfficialScorecard({
+  scorecard,
+  showPrintButton = true,
+  showEmailButton = false,
+}: OfficialScorecardProps) {
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSendEmail = async () => {
+    setIsSendingEmail(true);
+    setEmailStatus(null);
+    try {
+      const res = await fetch("/api/student/scorecard/email", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailStatus({
+          success: false,
+          message: data.error || "Failed to dispatch email.",
+        });
+      } else {
+        setEmailStatus({
+          success: true,
+          message: data.message || "Official scorecard sent to your email!",
+        });
+      }
+    } catch {
+      setEmailStatus({
+        success: false,
+        message: "Network error sending email.",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
   const p1Pct = ((scorecard.phase1_score / 80) * 100).toFixed(1);
   const q1Pct = ((scorecard.coding_q1_score / 10) * 100).toFixed(1);
   const q2Pct = ((scorecard.coding_q2_score / 10) * 100).toFixed(1);
@@ -47,17 +81,54 @@ export function OfficialScorecard({ scorecard, showPrintButton = true }: Officia
 
   return (
     <div className="space-y-4">
-      {/* Print Trigger (Hidden during print) */}
-      {showPrintButton && (
-        <div className="flex justify-end no-print print:hidden">
-          <Button
-            onClick={handlePrint}
-            variant="outline"
-            className="text-xs font-semibold bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs flex items-center gap-1.5"
-          >
-            <Printer className="w-4 h-4 text-slate-600" />
-            Print Official Scorecard
-          </Button>
+      {/* Print and Email Triggers (Hidden during print) */}
+      {(showPrintButton || showEmailButton) && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 no-print print:hidden">
+          {emailStatus ? (
+            <div
+              className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
+                emailStatus.success
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  : "bg-rose-50 text-rose-800 border border-rose-200"
+              }`}
+            >
+              {emailStatus.success ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              ) : null}
+              <span>{emailStatus.message}</span>
+            </div>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2">
+            {showEmailButton && (
+              <Button
+                onClick={handleSendEmail}
+                disabled={isSendingEmail}
+                variant="outline"
+                className="text-xs font-semibold bg-white text-blue-700 border-blue-300 hover:bg-blue-50 shadow-xs flex items-center gap-1.5"
+              >
+                {isSendingEmail ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Mail className="w-3.5 h-3.5 text-blue-600" />
+                )}
+                {isSendingEmail ? "Dispatching Email..." : "Email My Scorecard"}
+              </Button>
+            )}
+
+            {showPrintButton && (
+              <Button
+                onClick={handlePrint}
+                variant="outline"
+                className="text-xs font-semibold bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs flex items-center gap-1.5"
+              >
+                <Printer className="w-4 h-4 text-slate-600" />
+                Print Official Scorecard
+              </Button>
+            )}
+          </div>
         </div>
       )}
 

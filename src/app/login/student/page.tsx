@@ -232,6 +232,19 @@ export default function StudentLoginPage() {
           <StudentLoginForm />
         </React.Suspense>
 
+        {/* Register Now Callout */}
+        <div className="mt-4 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-center space-y-1">
+          <p className="text-xs font-bold text-slate-800">
+            Don&apos;t have login credentials yet?
+          </p>
+          <Link
+            href="/register"
+            className="inline-flex items-center text-xs font-extrabold text-blue-700 hover:text-blue-900 transition-colors"
+          >
+            Register Now for Codethon 2026 →
+          </Link>
+        </div>
+
         {/* Bottom Help */}
         <p className="mt-4 text-center text-xs text-slate-500">
           Cannot sign in? Contact your invigilator or administrator immediately.
