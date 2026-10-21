@@ -118,12 +118,18 @@ export default function Phase1ExaminationPage() {
         return;
       }
 
-      const activeTrackFromData = data.track || data.session?.phase2_category || "C";
-      const activeLangFromData = data.language || data.session?.phase2_language || null;
+      const hasChosenTrack = Boolean(data.session?.phase2_category || data.isTrackSelected);
+      const activeTrackFromData = data.session?.phase2_category || data.track || "C";
+      const activeLangFromData = data.session?.phase2_language || data.language || null;
       setCurrentTrack(activeTrackFromData);
       setCurrentLang(activeLangFromData);
       setTempTrack(activeTrackFromData);
       if (activeLangFromData) setTempDsaLang(activeLangFromData as any);
+
+      // If candidate has not explicitly selected a track, prompt them immediately
+      if (!hasChosenTrack) {
+        setShowTrackSelectModal(true);
+      }
 
       setStudentInfo(data.student);
       setQuestions(data.questions || []);
@@ -635,6 +641,30 @@ export default function Phase1ExaminationPage() {
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* QUESTION PANEL (Columns 1-8) */}
         <div className="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 flex flex-col justify-between shadow-lg min-h-[580px]">
+          {/* Active Track Banner & Switch Button */}
+          <div className="flex items-center justify-between p-3 bg-blue-950/40 border border-blue-800/60 rounded-lg mb-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-medium">Exam Language Track:</span>
+              <strong className="text-blue-200">
+                {currentTrack === "Web Development" ? "Web Development" : currentTrack}
+                {currentTrack === "DSA" && currentLang ? ` (${currentLang})` : ""}
+              </strong>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTempTrack(currentTrack || "C");
+                if (currentLang && (currentLang === "C" || currentLang === "C++" || currentLang === "Java")) {
+                  setTempDsaLang(currentLang as any);
+                }
+                setShowTrackSelectModal(true);
+              }}
+              className="text-xs text-blue-400 hover:text-white underline font-bold cursor-pointer"
+            >
+              Change Language Track
+            </button>
+          </div>
+
           {currentQuestion ? (
             <div className="space-y-4">
               {/* Question Header & Category Badge */}

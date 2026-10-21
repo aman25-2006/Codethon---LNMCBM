@@ -124,8 +124,9 @@ export interface StudentExamSessionState {
     markedForReview: number;
     total: number;
   };
-  track?: string;
+  track?: string | null;
   language?: string | null;
+  isTrackSelected?: boolean;
 }
 
 declare global {
@@ -381,7 +382,7 @@ export async function startOrResumePhase1(
     } else if (
       requestedTrack &&
       session.status === "phase1_in_progress" &&
-      session.phase2_category !== requestedTrack
+      (session.phase2_category !== requestedTrack || !session.phase2_category)
     ) {
       // Candidate specifically updated their chosen track
       session.phase2_category = requestedTrack;
@@ -494,8 +495,9 @@ export async function getFullStudentExamState(
       markedForReview: markedCount,
       total: examPayload.questions.length,
     },
-    track: activeTrack,
-    language: session.phase2_language,
+    track: session.phase2_category || null,
+    language: session.phase2_language || null,
+    isTrackSelected: Boolean(session.phase2_category),
   };
 }
 

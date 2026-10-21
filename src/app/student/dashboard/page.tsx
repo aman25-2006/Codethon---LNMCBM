@@ -131,14 +131,25 @@ export default function StudentDashboardPage() {
         const sessionData = await sessionRes.json();
         if (sessionData.session) {
           setSessionStatus(sessionData.session.status);
-          if (sessionData.session.phase2_category) {
-            setActiveTrack(sessionData.session.phase2_category);
-            setSelectedTrack(sessionData.session.phase2_category);
+          const currentTrackName = sessionData.session.phase2_category || sessionData.track || null;
+          const currentTrackLang = sessionData.session.phase2_language || sessionData.language || null;
+
+          if (currentTrackName) {
+            setActiveTrack(currentTrackName);
+            setSelectedTrack(currentTrackName);
+          } else if (sessionData.session.status === "phase1_in_progress") {
+            // Active session without a chosen language track - prompt candidate immediately
+            setShowInstructionsModal(true);
+            setRulesAcknowledged(true);
           }
-          if (sessionData.session.phase2_language) {
-            setActiveLang(sessionData.session.phase2_language);
-            setSelectedDsaLang(sessionData.session.phase2_language as any);
+
+          if (currentTrackLang) {
+            setActiveLang(currentTrackLang);
+            if (currentTrackLang === "C" || currentTrackLang === "C++" || currentTrackLang === "Java") {
+              setSelectedDsaLang(currentTrackLang as any);
+            }
           }
+
           if (sessionData.remainingSeconds !== undefined) {
             setRemainingSeconds(sessionData.remainingSeconds);
           }
@@ -342,7 +353,7 @@ export default function StudentDashboardPage() {
             )}
 
             {sessionStatus === "phase1_in_progress" && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs p-2 bg-amber-100/70 border border-amber-200 rounded-lg text-amber-900 font-medium">
                   <span className="flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-amber-700 animate-spin" />
@@ -353,27 +364,43 @@ export default function StudentDashboardPage() {
                   </span>
                 </div>
 
-                {activeTrack && (
-                  <div className="flex items-center justify-between text-xs px-2.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-900">
-                    <span>
-                      Active Track: <strong>{activeTrack}</strong> {activeLang ? `(${activeLang})` : ""}
+                {/* Active Track Status & Language Switcher */}
+                <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-600 font-medium">Exam Language Track:</span>
+                    <span className="font-bold text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-full border border-blue-200">
+                      {activeTrack || "Not Selected Yet"}
+                      {activeTrack === "DSA" && activeLang ? ` (${activeLang})` : ""}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowInstructionsModal(true)}
-                      className="text-[11px] font-bold text-blue-700 hover:underline cursor-pointer"
-                    >
-                      Change Track
-                    </button>
                   </div>
-                )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setRulesAcknowledged(true);
+                      setShowInstructionsModal(true);
+                    }}
+                    className="w-full text-xs border-blue-300 text-blue-800 hover:bg-blue-100 font-bold py-1.5 h-auto flex items-center justify-center gap-1.5"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-blue-600" />
+                    {activeTrack ? "Change Language Track" : "Choose Language Track Now"}
+                  </Button>
+                </div>
 
                 <Button
                   variant="primary"
                   className="w-full text-xs font-bold py-2.5 bg-amber-600 hover:bg-amber-700 border-amber-600 text-white"
-                  onClick={() => router.push("/exam/phase-1")}
+                  onClick={() => {
+                    if (!activeTrack) {
+                      setRulesAcknowledged(true);
+                      setShowInstructionsModal(true);
+                    } else {
+                      router.push("/exam/phase-1");
+                    }
+                  }}
                 >
-                  Resume Phase 1 Examination Now
+                  {!activeTrack ? "Select Language & Enter Phase 1" : "Resume Phase 1 Examination Now"}
                   <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                 </Button>
               </div>
@@ -716,7 +743,7 @@ export default function StudentDashboardPage() {
                 variant="primary"
                 size="sm"
                 onClick={handleLaunchPhase1}
-                disabled={!rulesAcknowledged || starting}
+                disabled={(!rulesAcknowledged && sessionStatus === "not_started") || starting}
                 className="bg-emerald-600 hover:bg-emerald-700 font-bold"
               >
                 {starting ? (
@@ -726,7 +753,9 @@ export default function StudentDashboardPage() {
                   </>
                 ) : (
                   <>
-                    Confirm &amp; Begin {selectedTrack} Exam
+                    {sessionStatus === "phase1_in_progress"
+                      ? `Confirm & Enter ${selectedTrack} Exam`
+                      : `Confirm & Begin ${selectedTrack} Exam`}
                     <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                   </>
                 )}
