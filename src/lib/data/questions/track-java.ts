@@ -267,7 +267,8 @@ export const TRACK_JAVA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Moderate",
     marks: 2,
-    question_text: "Consider the loop: int count = 0; for (int i = 0; i < 10; i++) { if (i == 4) break; count++; } System.out.print(count); What is printed?",
+    question_text: "Consider the loop below. What will be printed by System.out.print(count)?",
+    code_snippet: "int count = 0;\nfor (int i = 0; i < 10; i++) {\n    if (i == 4) break;\n    count++;\n}\nSystem.out.print(count);",
     options: {
       A: "3",
       B: "4",
@@ -572,8 +573,9 @@ export const TRACK_JAVA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Case Study",
     difficulty: "Moderate",
     marks: 2,
-    case_study_passage: "[Scenario: Inventory Item Out-of-Stock Alert]\nGiven int[] inventory = {15, 0, 8, 0, 12}; , which loop correctly prints the indices of all items that are out of\nstock?",
-    question_text: "[Scenario: Inventory Item Out-of-Stock Alert] Given int[] inventory = {15, 0, 8, 0, 12}; , which loop correctly prints the indices of all items that are out of\nstock?",
+    case_study_passage: "Scenario: Inventory Item Out-of-Stock Alert\nAn inventory tracker uses an array to record stock levels for items.",
+    question_text: "Given the array below, which loop correctly prints the indices of all items that are out of stock (count is 0)?",
+    code_snippet: "int[] inventory = {15, 0, 8, 0, 12};\n// Print indices where stock is 0",
     options: {
       A: "for (int x : inventory) if (x == 0) System.out.print(x + \" \");",
       B: "for (int i = 0; i < inventory.length; i++) if (inventory[i] == 0) System.out.print(i + \" \");",
@@ -640,8 +642,9 @@ export const TRACK_JAVA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Case Study",
     difficulty: "Tricky",
     marks: 2,
-    case_study_passage: "[Scenario: Safe Array Traversal Boundary]\nWhat happens when the loop executes on int[] data = {4, 8, 12}; ?",
-    question_text: "[Scenario: Safe Array Traversal Boundary] What happens when the loop executes on int[] data = {4, 8, 12}; ?\nint sum = 0;\nfor (int i = 0; i <= data.length; i++) {\n    sum += data[i];\n}",
+    case_study_passage: "Scenario: Safe Array Traversal Boundary\nA developer traverses an integer array to calculate its cumulative sum.",
+    question_text: "What happens when the following loop executes?",
+    code_snippet: "int[] data = {4, 8, 12};\nint sum = 0;\nfor (int i = 0; i <= data.length; i++) {\n    sum += data[i];\n}",
     options: {
       A: "Computes correct sum of 24",
       B: "Throws `ArrayIndexOutOfBoundsException` at runtime when `i == data.length`",

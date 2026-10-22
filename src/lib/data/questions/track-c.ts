@@ -170,7 +170,7 @@ export const TRACK_C_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Easy",
     marks: 2,
-    question_text: "Consider the following integer variable declaration:\nint marks = 75;\nWhich condition correctly tests if marks is between 60 and 80 inclusive?",
+    question_text: "Given the variable declaration below, which condition correctly tests if marks is between 60 and 80 inclusive?",
     code_snippet: "int marks = 75;",
     options: {
       A: "60 <= marks <= 80",
@@ -236,7 +236,7 @@ export const TRACK_C_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Moderate",
     marks: 2,
-    question_text: "Consider the following array declaration:\nint arr[5] = {10, 20, 30};\nWhat are the values of arr[3] and arr[4] in C?",
+    question_text: "Consider the array declaration below. What are the values of arr[3] and arr[4] in C?",
     code_snippet: "int arr[5] = {10, 20, 30};",
     options: {
       A: "Garbage values",

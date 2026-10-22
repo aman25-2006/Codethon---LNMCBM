@@ -29,6 +29,7 @@ import { SavedCandidateAnswer } from "@/lib/services/exam-service";
 import { ExamTerminationScreen } from "@/components/exam/ExamTerminationScreen";
 import { ExamWarningModal } from "@/components/exam/ExamWarningModal";
 import { ExamPreFlightNoticeModal } from "@/components/exam/ExamPreFlightNoticeModal";
+import { QuestionRenderer, OptionTextRenderer } from "@/components/exam/QuestionCodeBox";
 
 const COMPETITION_TRACKS = [
   { id: "C", name: "Track A: C Programming", lang: "C", desc: "Core C language, pointers, memory, preprocessor directives & standard libraries." },
@@ -697,22 +698,14 @@ export default function Phase1ExaminationPage() {
                 </div>
               )}
 
-              {/* Question Text */}
-              <div className="text-sm sm:text-base font-semibold text-slate-100 leading-relaxed pt-1">
-                {currentQuestion.question_text}
+              {/* Question & Code Box Display */}
+              <div className="pt-1">
+                <QuestionRenderer
+                  questionText={currentQuestion.question_text}
+                  codeSnippet={currentQuestion.code_snippet}
+                  track={currentQuestion.track || currentTrack}
+                />
               </div>
-
-              {/* Code Snippet (if applicable) */}
-              {currentQuestion.code_snippet && (
-                <div className="rounded-xl bg-slate-950 p-4 border border-slate-800 font-mono text-xs overflow-x-auto shadow-inner">
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-2">
-                    <Code2 className="w-3.5 h-3.5 text-blue-400" /> Reference Code Snippet
-                  </div>
-                  <pre className="text-emerald-400 whitespace-pre-wrap">
-                    {currentQuestion.code_snippet}
-                  </pre>
-                </div>
-              )}
 
               {/* Four Selectable Answer Options */}
               <div className="space-y-3 pt-3">
@@ -742,7 +735,7 @@ export default function Phase1ExaminationPage() {
                       </div>
 
                       <div className="text-xs sm:text-sm text-slate-200 font-medium leading-relaxed pt-0.5">
-                        {opt.option_text}
+                        <OptionTextRenderer text={opt.option_text} />
                       </div>
                     </label>
                   );

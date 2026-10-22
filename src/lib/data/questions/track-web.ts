@@ -169,7 +169,8 @@ export const TRACK_WEB_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Easy",
     marks: 2,
-    question_text: "Consider the CSS rule: .container { display: flex; justify-content: center; align-items: center; } What is the visual layout of child items inside .container ?",
+    question_text: "Consider the CSS rule below. What is the visual layout of child items inside .container?",
+    code_snippet: ".container {\n    display: flex;\n    justify-content: center;\n    align-items: center;\n}",
     options: {
       A: "Stacked vertically top-left",
       B: "Centered both horizontally and vertically within the container",
@@ -233,7 +234,8 @@ export const TRACK_WEB_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Moderate",
     marks: 2,
-    question_text: "What is the total calculated width of .box under standard CSS content-box ? .box { width: 200px; padding: 15px; border: 5px solid black; margin: 10px; }",
+    question_text: "What is the total calculated width of .box under the standard CSS content-box model?",
+    code_snippet: ".box {\n    width: 200px;\n    padding: 15px;\n    border: 5px solid black;\n    margin: 10px;\n}",
     options: {
       A: "200px",
       B: "240px",
@@ -313,7 +315,8 @@ export const TRACK_WEB_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Tricky",
     marks: 2,
-    question_text: "What color is text inside <p id=\"intro\" class=\"highlight\">Hello</p> ? p { color: blue; } .highlight { color: green; } #intro { color: red; }",
+    question_text: "According to CSS specificity rules, what color is the text inside the paragraph element below?",
+    code_snippet: "<!-- HTML -->\n<p id=\"intro\" class=\"highlight\">Hello</p>\n\n/* CSS */\np { color: blue; }\n.highlight { color: green; }\n#intro { color: red; }",
     options: {
       A: "blue",
       B: "green",
@@ -448,7 +451,8 @@ export const TRACK_WEB_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "Identify the CSS error in: .card { background-color: #ffffff border-radius: 8px; }",
+    question_text: "Identify the CSS syntax error in the following rule:",
+    code_snippet: ".card {\n    background-color: #ffffff\n    border-radius: 8px;\n}",
     options: {
       A: "Class names cannot be card",
       B: "Missing semicolon `;` after background-color value",

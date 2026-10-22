@@ -5,6 +5,7 @@ import { X, Eye, ShieldCheck, BookOpen, Code2, CheckCircle2 } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MCQQuestionRecord } from "@/lib/services/questions-service";
+import { QuestionRenderer, OptionTextRenderer } from "@/components/exam/QuestionCodeBox";
 
 interface QuestionPreviewModalProps {
   isOpen: boolean;
@@ -80,22 +81,14 @@ export function QuestionPreviewModal({
               </div>
             )}
 
-            {/* Question Text */}
-            <div className="text-sm font-semibold text-slate-900 leading-snug">
-              {question.question_text}
+            {/* Question & Code Box */}
+            <div className="bg-slate-900 p-4 rounded-xl">
+              <QuestionRenderer
+                questionText={question.question_text}
+                codeSnippet={question.code_snippet}
+                track={question.track}
+              />
             </div>
-
-            {/* Code Snippet */}
-            {question.code_snippet && (
-              <div className="rounded-lg bg-slate-900 p-3.5 border border-slate-800">
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mb-2">
-                  <Code2 className="w-3.5 h-3.5" /> Code Reference
-                </div>
-                <pre className="font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre-wrap">
-                  {question.code_snippet}
-                </pre>
-              </div>
-            )}
 
             {/* Options List */}
             <div className="space-y-2 pt-2">
@@ -107,7 +100,9 @@ export function QuestionPreviewModal({
                   <div className="w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
                     {opt.option_key}
                   </div>
-                  <div className="text-xs text-slate-800 font-medium">{opt.option_text}</div>
+                  <div className="text-xs text-slate-800 font-medium">
+                    <OptionTextRenderer text={opt.option_text} />
+                  </div>
                 </div>
               ))}
             </div>

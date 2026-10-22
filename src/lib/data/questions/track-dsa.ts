@@ -249,7 +249,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Technical Understanding",
     difficulty: "Moderate",
     marks: 2,
-    question_text: "What is the return value of mystery(4) ? int mystery(int n) { if (n <= 1) return 1; return n + mystery(n - 1); }",
+    question_text: "What is the return value of calling mystery(4)?",
+    code_snippet: "int mystery(int n) {\n    if (n <= 1) return 1;\n    return n + mystery(n - 1);\n}",
     options: {
       A: "10",
       B: "24",
@@ -330,7 +331,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What is the output of the following number reversing algorithm for num = 1234 ? int rev = 0, num = 1234; while (num > 0) { rev = rev * 10 + num % 10; num /= 10; } printf(\"%d\", rev);",
+    question_text: "What is the output of the following number reversing algorithm for num = 1234?",
+    code_snippet: "int rev = 0, num = 1234;\nwhile (num > 0) {\n    rev = rev * 10 + num % 10;\n    num /= 10;\n}\nprintf(\"%d\", rev);",
     options: {
       A: "1234",
       B: "4321",
@@ -346,7 +348,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What does the following code compute on array arr of size n ? int ans = arr[0]; for (int i = 1; i < n; i++) { if (arr[i] < ans) ans = arr[i]; }",
+    question_text: "What does the following code compute on array arr of size n?",
+    code_snippet: "int ans = arr[0];\nfor (int i = 1; i < n; i++) {\n    if (arr[i] < ans) {\n        ans = arr[i];\n    }\n}",
     options: {
       A: "Maximum element",
       B: "Minimum element",
@@ -362,7 +365,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What is the return value of factorial(3) ? int factorial(int n) { if (n <= 1) return 1; return n * factorial(n - 1); }",
+    question_text: "What is the return value of calling factorial(3)?",
+    code_snippet: "int factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}",
     options: {
       A: "3",
       B: "6",
@@ -378,7 +382,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What is the output of the following sum-of-digits code for n = 456 ? int n = 456, sum = 0; while (n > 0) { sum += n % 10; n /= 10; } printf(\"%d\", sum);",
+    question_text: "What is the output of the following sum-of-digits code for n = 456?",
+    code_snippet: "int n = 456, sum = 0;\nwhile (n > 0) {\n    sum += n % 10;\n    n /= 10;\n}\nprintf(\"%d\", sum);",
     options: {
       A: "15",
       B: "456",
@@ -394,7 +399,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What is the output of the following array reversal code? int a[] = {1, 2, 3, 4, 5}; int l = 0, r = 4; while (l < r) { int temp = a[l]; a[l] = a[r]; a[r] = temp; l++; r--; } printf(\"%d %d\", a[0], a[4]);",
+    question_text: "What is the output of the following array reversal code?",
+    code_snippet: "int a[] = {1, 2, 3, 4, 5};\nint l = 0, r = 4;\nwhile (l < r) {\n    int temp = a[l];\n    a[l] = a[r];\n    a[r] = temp;\n    l++;\n    r--;\n}\nprintf(\"%d %d\", a[0], a[4]);",
     options: {
       A: "1 5",
       B: "5 1",
@@ -410,7 +416,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What is the bug in the following Linear Search function? int search(int arr[], int n, int target) { for (int i = 0; i < n; i++) { if (arr[i] == target) return i; else return -1; } }",
+    question_text: "What is the bug in the following Linear Search function?",
+    code_snippet: "int search(int arr[], int n, int target) {\n    for (int i = 0; i < n; i++) {\n        if (arr[i] == target) return i;\n        else return -1;\n    }\n}",
     options: {
       A: "Loop condition out of bounds",
       B: "The `else return -1;` statement exits the function during iteration 0 if the first element does not match",
@@ -442,7 +449,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Easy",
     marks: 3,
-    question_text: "What is the time complexity of the following nested loop? for (int i = 0; i < n; i++) { for (int j = 0; j < n; j++) { printf(\"*\"); } }",
+    question_text: "What is the time complexity of the following nested loop?",
+    code_snippet: "for (int i = 0; i < n; i++) {\n    for (int j = 0; j < n; j++) {\n        printf(\"*\");\n    }\n}",
     options: {
       A: "O(n)",
       B: "O(n^2)",
@@ -458,7 +466,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Moderate",
     marks: 3,
-    question_text: "What is printed by checking num = 121 ? int num = 121, orig = num, rev = 0; while (num > 0) { rev = rev * 10 + num % 10; num /= 10; } if (orig == rev) printf(\"YES\"); else printf(\"NO\");",
+    question_text: "What is printed by the following palindrome checking code for num = 121?",
+    code_snippet: "int num = 121, orig = num, rev = 0;\nwhile (num > 0) {\n    rev = rev * 10 + num % 10;\n    num /= 10;\n}\nif (orig == rev) printf(\"YES\");\nelse printf(\"NO\");",
     options: {
       A: "NO",
       B: "YES",
@@ -474,7 +483,8 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Logic and Debugging",
     difficulty: "Moderate",
     marks: 3,
-    question_text: "What is the output of counting vowels in \"Algorithm\" ? char str[] = \"Algorithm\"; int vowels = 0; for (int i = 0; str[i] != '\\0'; i++) { char c = str[i]; if (c=='a'||c=='e'||c=='i'||c=='o'||c=='u'|| c=='A'||c=='E'||c=='I'||c=='O'||c=='U') vowels++; } printf(\"%d\", vowels);",
+    question_text: "What is the output of counting vowels in \"Algorithm\"?",
+    code_snippet: "char str[] = \"Algorithm\";\nint vowels = 0;\nfor (int i = 0; str[i] != '\\0'; i++) {\n    char c = str[i];\n    if (c=='a'||c=='e'||c=='i'||c=='o'||c=='u'||\n        c=='A'||c=='E'||c=='I'||c=='O'||c=='U') {\n        vowels++;\n    }\n}\nprintf(\"%d\", vowels);",
     options: {
       A: "2",
       B: "3",
@@ -627,8 +637,9 @@ export const TRACK_DSA_QUESTIONS: OfficialMCQQuestion[] = [
     category: "Case Study",
     difficulty: "Tricky",
     marks: 2,
-    case_study_passage: "[Scenario: Stack Overflow in Recursive Sum]\nWhat happens when calling sum(5) with definition int sum(int n) { return n + sum(n - 1); } ?",
-    question_text: "[Scenario: Stack Overflow in Recursive Sum] What happens when calling sum(5) with definition int sum(int n) { return n + sum(n - 1); } ?",
+    case_study_passage: "Scenario: Stack Overflow in Recursive Sum\nA recursive function is defined to sum values down from n.",
+    question_text: "What happens when calling sum(5) with the following definition?",
+    code_snippet: "int sum(int n) {\n    return n + sum(n - 1);\n}",
     options: {
       A: "Returns 15",
       B: "Causes Stack Overflow due to the absence of a terminating base case",

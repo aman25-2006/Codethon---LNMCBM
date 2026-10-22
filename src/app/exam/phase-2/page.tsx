@@ -33,6 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MonacoCodeEditor } from "@/components/exam/MonacoCodeEditor";
+import { formatInlineCode } from "@/components/exam/QuestionCodeBox";
 import { ExamTerminationScreen } from "@/components/exam/ExamTerminationScreen";
 import { ExamWarningModal } from "@/components/exam/ExamWarningModal";
 import { ExamPreFlightNoticeModal } from "@/components/exam/ExamPreFlightNoticeModal";
@@ -809,7 +810,7 @@ export default function Phase2ExamWorkspacePage() {
                   Problem Description
                 </h4>
                 <div className="whitespace-pre-line text-slate-200">
-                  {activeProblem.problem_statement}
+                  {formatInlineCode(activeProblem.problem_statement)}
                 </div>
               </div>
 
