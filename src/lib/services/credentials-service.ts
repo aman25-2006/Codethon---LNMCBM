@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateTemporaryPassword } from "@/lib/auth/password-generator";
 import { generateSalt, hashPassword, verifyPassword } from "@/lib/auth/password-hasher";
@@ -307,13 +308,23 @@ export async function authenticateStudent(
       };
     }
 
-    // 2. Authenticate against Supabase Auth using email + password mapping
-    const { data: authData, error: authError } = await admin.auth.signInWithPassword({
+    // 2. Authenticate against Supabase Auth using email + password mapping via Anon client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
       email: student.email,
       password: cleanPass,
     });
 
     if (authError || !authData?.user) {
+      console.warn("Student signInWithPassword rejected:", authError?.message);
       return { success: false, error: "Invalid Roll Number or Password." };
     }
 
