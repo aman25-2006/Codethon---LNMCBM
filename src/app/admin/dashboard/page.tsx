@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatabasePersistenceModal } from "@/components/admin/DatabasePersistenceModal";
 
 interface DashboardStats {
   totalStudents: number;
@@ -50,6 +51,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = React.useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isDbHelpOpen, setIsDbHelpOpen] = React.useState(false);
 
   const fetchStats = React.useCallback(async () => {
     try {
@@ -85,10 +87,17 @@ export default function AdminDashboardPage() {
               Competition Operations Center
             </h1>
             <Badge variant="default">Session 2026</Badge>
-            {stats?.isDatabaseConnected && (
+            {stats?.isDatabaseConnected ? (
               <Badge variant="success" className="hidden sm:inline-flex items-center gap-1">
                 <Database className="w-3 h-3" /> Live Database
               </Badge>
+            ) : (
+              <button
+                onClick={() => setIsDbHelpOpen(true)}
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors"
+              >
+                <AlertTriangle className="w-3 h-3 text-amber-700" /> In-Memory Mode (Warning)
+              </button>
             )}
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -121,6 +130,41 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Ephemeral In-Memory Warning Banner */}
+      {!isLoading && stats && !stats.isDatabaseConnected && (
+        <div className="rounded-xl border-2 border-amber-400 bg-amber-50/95 p-4 sm:p-5 shadow-xs text-slate-900 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-extrabold text-amber-950">
+                    Ephemeral In-Memory Mode Active
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                    Data Wipes When Server Sleeps (1–2 Mins)
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+                  Supabase database environment variables are missing on Vercel. Candidate rosters, passwords, and exam responses are stored in server RAM and will be deleted whenever the server sleeps. Link your Supabase database in Vercel to preserve data permanently (for 1+ months).
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setIsDbHelpOpen(true)}
+              className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm"
+              size="sm"
+            >
+              <Database className="w-3.5 h-3.5 mr-1.5" />
+              Fix Database Persistence
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -388,6 +432,13 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
       </div>
+      {/* Database Persistence Diagnostic Modal */}
+      <DatabasePersistenceModal
+        isOpen={isDbHelpOpen}
+        onClose={() => setIsDbHelpOpen(false)}
+        isLiveDatabase={stats?.isDatabaseConnected}
+        onRefreshStatus={fetchStats}
+      />
     </div>
   );
 }

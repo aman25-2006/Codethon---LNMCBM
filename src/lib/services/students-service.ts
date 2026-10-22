@@ -56,7 +56,7 @@ export async function getStudents(params?: {
   search?: string;
   course?: string;
   status?: string;
-}): Promise<{ students: StudentRecord[]; metrics: StudentMetrics }> {
+}): Promise<{ students: StudentRecord[]; metrics: StudentMetrics; isLiveDatabase: boolean }> {
   const search = params?.search?.trim().toLowerCase() || "";
   const course = params?.course?.trim() || "";
   const status = params?.status?.trim() || "";
@@ -105,7 +105,7 @@ export async function getStudents(params?: {
       );
     }
 
-    return { students: allStudents, metrics };
+    return { students: allStudents, metrics, isLiveDatabase: true };
   }
 
   // Local fallback store
@@ -141,7 +141,7 @@ export async function getStudents(params?: {
     );
   }
 
-  return { students: filtered, metrics };
+  return { students: filtered, metrics, isLiveDatabase: false };
 }
 
 /**

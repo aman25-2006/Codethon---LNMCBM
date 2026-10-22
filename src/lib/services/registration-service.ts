@@ -247,6 +247,7 @@ export async function getRegistrationRequests(params?: {
 }): Promise<{
   registrations: StudentRegistrationRecord[];
   metrics: RegistrationMetrics;
+  isLiveDatabase: boolean;
 }> {
   const statusFilter = params?.status?.toLowerCase();
   const search = params?.search?.trim().toLowerCase();
@@ -311,6 +312,7 @@ export async function getRegistrationRequests(params?: {
   return {
     registrations: filtered,
     metrics,
+    isLiveDatabase: isSupabaseLive(),
   };
 }
 

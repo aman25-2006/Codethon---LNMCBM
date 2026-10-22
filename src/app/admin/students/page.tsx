@@ -27,6 +27,8 @@ import {
   FileImage,
   X,
   ExternalLink,
+  Database,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -41,6 +43,7 @@ import { ConfirmDialog } from "@/components/admin/students/ConfirmDialog";
 import { CredentialsModal } from "@/components/admin/students/CredentialsModal";
 import { EmailLogsModal } from "@/components/admin/students/EmailLogsModal";
 import { InvigilatorExportModal } from "@/components/admin/students/InvigilatorExportModal";
+import { DatabasePersistenceModal } from "@/components/admin/DatabasePersistenceModal";
 
 const COURSES = ["ALL", "BCA", "MCA", "BBA", "MBA", "B.Com", "M.Com", "Other"];
 const STATUS_OPTIONS = [
@@ -64,6 +67,8 @@ export default function AdminStudentsPage() {
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [isLiveDatabase, setIsLiveDatabase] = React.useState<boolean | null>(null);
+  const [isDbHelpOpen, setIsDbHelpOpen] = React.useState(false);
 
   // Filters for Roster
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -126,6 +131,9 @@ export default function AdminStudentsPage() {
       }
       const data = await res.json();
       setStudents(data.students || []);
+      if (typeof data.isLiveDatabase === "boolean") {
+        setIsLiveDatabase(data.isLiveDatabase);
+      }
       setMetrics(
         data.metrics || {
           total: 0,
@@ -153,6 +161,9 @@ export default function AdminStudentsPage() {
       if (res.ok) {
         const data = await res.json();
         setRegistrations(data.registrations || []);
+        if (typeof data.isLiveDatabase === "boolean") {
+          setIsLiveDatabase(data.isLiveDatabase);
+        }
         if (data.metrics) {
           setRegMetrics(data.metrics);
         }
@@ -328,6 +339,20 @@ export default function AdminStudentsPage() {
             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">
               Exam Administration
             </span>
+            {isLiveDatabase === true && (
+              <Badge variant="success" className="text-[10px] font-semibold gap-1">
+                <Database className="w-3 h-3" /> Supabase Live (Persistent)
+              </Badge>
+            )}
+            {isLiveDatabase === false && (
+              <button
+                onClick={() => setIsDbHelpOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition-colors"
+                title="Click to see why details disappear and how to connect database"
+              >
+                <AlertTriangle className="w-3 h-3 text-amber-700" /> In-Memory Mode (Warning)
+              </button>
+            )}
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
             Student Management &amp; Candidate Directory
@@ -405,6 +430,41 @@ export default function AdminStudentsPage() {
           </Button>
         </div>
       </div>
+
+      {/* High-visibility Warning Banner if Running on Temporary RAM */}
+      {!isLoading && isLiveDatabase === false && (
+        <div className="rounded-xl border-2 border-amber-400 bg-amber-50/95 p-4 sm:p-5 shadow-xs text-slate-900 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm sm:text-base font-extrabold text-amber-950">
+                    Ephemeral Storage Mode: Supabase PostgreSQL Not Connected
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                    Data Wipes On Server Sleep (1–2 Mins)
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-amber-900 leading-relaxed">
+                  The portal is currently saving students and credentials in <strong>temporary server RAM</strong>. On Vercel, server RAM resets automatically after 1–2 minutes of idle time. To keep candidate data, passwords, and exam scores permanently (for 1+ months), connect your Supabase database keys in Vercel.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setIsDbHelpOpen(true)}
+              className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm"
+              size="sm"
+            >
+              <Database className="w-3.5 h-3.5 mr-1.5" />
+              Fix Database Persistence
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
@@ -1164,6 +1224,17 @@ export default function AdminStudentsPage() {
         isOpen={isInvigilatorExportOpen}
         totalStudents={metrics.total}
         onClose={() => setIsInvigilatorExportOpen(false)}
+      />
+
+      {/* Database Persistence & Setup Diagnostic Modal */}
+      <DatabasePersistenceModal
+        isOpen={isDbHelpOpen}
+        onClose={() => setIsDbHelpOpen(false)}
+        isLiveDatabase={isLiveDatabase}
+        onRefreshStatus={() => {
+          fetchStudents();
+          fetchRegistrations();
+        }}
       />
     </div>
   );

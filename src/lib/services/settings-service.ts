@@ -221,6 +221,20 @@ export async function checkCompetitionPreflight(): Promise<PreflightChecklistRes
   const settings = await getCompetitionSettings();
   const checks: PreflightCheckItem[] = [];
 
+  // Check 0: Database Persistence Mode (Supabase PostgreSQL)
+  const isDbLive = isSupabaseLive();
+  checks.push({
+    id: "database_persistence",
+    label: "Persistent Database Storage (Supabase PostgreSQL)",
+    required: true,
+    passed: isDbLive,
+    currentValue: isDbLive ? "Supabase Live" : "In-Memory RAM",
+    expectedValue: "Supabase Live (Persistent)",
+    details: isDbLive
+      ? "Supabase PostgreSQL connected. Candidate roster, credentials, and scores are permanently retained."
+      : "Portal is operating in temporary server RAM! All candidate details and passwords will be lost when the server sleeps after 1–2 minutes. Add Supabase keys to Vercel.",
+  });
+
   // Check 1: Active students registered
   let studentCount = 0;
   try {
