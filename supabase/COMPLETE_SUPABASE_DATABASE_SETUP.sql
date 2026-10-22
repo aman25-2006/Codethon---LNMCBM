@@ -378,22 +378,41 @@ CREATE INDEX IF NOT EXISTS idx_monitoring_events_student_id ON monitoring_events
 CREATE TABLE IF NOT EXISTS final_results (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID NOT NULL UNIQUE REFERENCES students(id) ON DELETE CASCADE,
-    competition_id UUID REFERENCES competition_settings(id) ON DELETE CASCADE,
-    phase1_mcq_score INT NOT NULL DEFAULT 0,
-    phase2_coding_score INT NOT NULL DEFAULT 0,
-    total_score INT NOT NULL DEFAULT 0,
-    total_time_taken_seconds INT NOT NULL DEFAULT 0,
-    state_merit_rank INT,
-    is_disqualified BOOLEAN NOT NULL DEFAULT false,
-    disqualification_reason TEXT,
+    session_id UUID REFERENCES exam_sessions(id) ON DELETE CASCADE,
+    phase1_score NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    coding_q1_score NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    coding_q2_score NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    total_score NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    rank INT,
     is_finalized BOOLEAN NOT NULL DEFAULT false,
     is_published BOOLEAN NOT NULL DEFAULT false,
+    verification_id TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(6), 'hex'),
+    finalized_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
 
-CREATE INDEX IF NOT EXISTS idx_final_results_rank ON final_results (state_merit_rank);
+-- Ensure all required columns exist even if the table was created in an earlier migration
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS rank INT;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS state_merit_rank INT;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS phase1_score NUMERIC(5, 2) DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS phase1_mcq_score INT DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS coding_q1_score NUMERIC(5, 2) DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS coding_q2_score NUMERIC(5, 2) DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS phase2_coding_score INT DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS total_score NUMERIC(5, 2) DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS total_time_taken_seconds INT DEFAULT 0;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS is_finalized BOOLEAN DEFAULT false;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS is_disqualified BOOLEAN DEFAULT false;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS disqualification_reason TEXT;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS verification_id TEXT;
+ALTER TABLE final_results ADD COLUMN IF NOT EXISTS finalized_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_final_results_student_id ON final_results (student_id);
+CREATE INDEX IF NOT EXISTS idx_final_results_rank ON final_results (rank);
 CREATE INDEX IF NOT EXISTS idx_final_results_total_score ON final_results (total_score DESC);
+CREATE INDEX IF NOT EXISTS idx_final_results_verification_id ON final_results (verification_id);
 
 DROP TRIGGER IF EXISTS set_final_results_updated_at ON final_results;
 CREATE TRIGGER set_final_results_updated_at
@@ -410,12 +429,15 @@ CREATE TABLE IF NOT EXISTS email_delivery_logs (
     email_type TEXT NOT NULL DEFAULT 'credentials',
     recipient_email TEXT NOT NULL,
     provider_message_id TEXT,
-    delivery_status TEXT NOT NULL CHECK (delivery_status IN ('sent', 'failed', 'provider_not_configured')),
+    delivery_status TEXT NOT NULL,
     attempt_count INT NOT NULL DEFAULT 1,
     error_details TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
+
+-- Relax delivery_status check constraint to support all provider statuses
+ALTER TABLE email_delivery_logs DROP CONSTRAINT IF EXISTS email_delivery_logs_delivery_status_check;
 
 CREATE INDEX IF NOT EXISTS idx_email_delivery_student_id ON email_delivery_logs (student_id);
 
