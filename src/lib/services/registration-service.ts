@@ -52,13 +52,15 @@ function getLocalStore(): StudentRegistrationRecord[] {
 }
 
 function isSupabaseLive(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim().replace(/^["']|["']$/g, "");
   return Boolean(
     url &&
     key &&
     !url.includes("your-project-id") &&
-    !key.includes("your-supabase-service-role-key")
+    !url.includes("placeholder") &&
+    !key.includes("your-supabase-service-role-key") &&
+    !key.includes("placeholder")
   );
 }
 

@@ -40,22 +40,15 @@ export function DatabasePersistenceModal({
     envStatus?: Record<string, boolean>;
   } | null>(null);
 
-  if (!isOpen) return null;
-
-  const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2500);
-  };
-
-  const handleTestConnection = async () => {
+  const handleTestConnection = React.useCallback(async () => {
     setTesting(true);
-    setTestResult(null);
     try {
       const res = await fetch("/api/admin/system/database-status");
       const data = await res.json();
       setTestResult(data);
-      if (onRefreshStatus) onRefreshStatus();
+      if (data.isLiveConnected && onRefreshStatus) {
+        onRefreshStatus();
+      }
     } catch {
       setTestResult({
         isLiveConnected: false,
@@ -65,7 +58,23 @@ export function DatabasePersistenceModal({
     } finally {
       setTesting(false);
     }
+  }, [onRefreshStatus]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      handleTestConnection();
+    }
+  }, [isOpen, handleTestConnection]);
+
+  if (!isOpen) return null;
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2500);
   };
+
+  const isConnected = testResult !== null ? testResult.isLiveConnected : Boolean(isLiveDatabase);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs">
@@ -81,7 +90,11 @@ export function DatabasePersistenceModal({
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900">
                   Permanent Database Configuration
                 </h2>
-                {isLiveDatabase ? (
+                {testing ? (
+                  <Badge variant="secondary" className="gap-1 text-xs animate-pulse">
+                    <RefreshCw className="w-3 h-3 animate-spin" /> Testing Connection...
+                  </Badge>
+                ) : isConnected ? (
                   <Badge variant="success" className="gap-1 text-xs">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Supabase Connected
                   </Badge>
@@ -104,6 +117,60 @@ export function DatabasePersistenceModal({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Live Test Status Card */}
+        {testResult && (
+          <div
+            className={`p-4 rounded-xl text-xs space-y-2 border ${
+              testResult.isLiveConnected
+                ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+                : "bg-amber-50 border-amber-300 text-amber-950"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="font-extrabold text-sm flex items-center gap-2">
+                {testResult.isLiveConnected ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <span>Supabase PostgreSQL Connected &amp; Persistent!</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    <span>Database Status ({testResult.mode})</span>
+                  </>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleTestConnection}
+                disabled={testing}
+                className="h-7 text-xs font-semibold"
+              >
+                <RefreshCw className={`w-3 h-3 mr-1 ${testing ? "animate-spin" : ""}`} />
+                Re-test
+              </Button>
+            </div>
+            <p className="text-xs leading-relaxed">{testResult.message}</p>
+            {testResult.tables && (
+              <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]">
+                {Object.entries(testResult.tables).map(([table, ready]) => (
+                  <span
+                    key={table}
+                    className={`px-2 py-0.5 rounded border font-semibold ${
+                      ready
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                        : "bg-rose-100 text-rose-800 border-rose-300"
+                    }`}
+                  >
+                    {table}: {ready ? "READY ✓" : "MISSING ✗"}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Why this is needed notice */}
         <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-2">
