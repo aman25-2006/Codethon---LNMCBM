@@ -6,8 +6,8 @@ import { createBrowserClient } from "@supabase/ssr";
  * Never exposes service-role keys.
  */
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, "");
 
   if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes("your-project-id")) {
     // Provide a non-throwing stub/client during local design and development

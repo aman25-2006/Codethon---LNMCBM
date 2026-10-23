@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAdmin } from "@/lib/auth-guard";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, getSanitizedSupabaseEnv } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -16,33 +16,73 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const {
+      url,
+      anonKey,
+      serviceRoleKey,
+      isUrlPlaceholder,
+      isAnonPlaceholder,
+      isServicePlaceholder,
+      isConfigured,
+    } = getSanitizedSupabaseEnv();
 
-    const isUrlConfigured = Boolean(url && !url.includes("your-project-id") && !url.includes("placeholder"));
-    const isAnonKeyConfigured = Boolean(anonKey && !anonKey.includes("your-anon-key") && !anonKey.includes("placeholder"));
-    const isServiceKeyConfigured = Boolean(
-      serviceRoleKey &&
-      !serviceRoleKey.includes("your-supabase-service-role-key") &&
-      !serviceRoleKey.includes("placeholder")
-    );
+    const maskUrl = (raw: string) => {
+      if (!raw) return { set: false, preview: "(Not Configured / Missing)" };
+      try {
+        const u = new URL(raw);
+        return { set: true, preview: `${u.protocol}//${u.hostname}` };
+      } catch {
+        return { set: true, preview: raw.slice(0, 20) + "..." };
+      }
+    };
 
-    if (!isUrlConfigured || !isServiceKeyConfigured) {
+    const maskKey = (raw: string) => {
+      if (!raw) return { set: false, preview: "(Not Configured / Missing)", length: 0 };
+      const len = raw.length;
+      if (raw.includes("placeholder") || raw.includes("your-")) {
+        return { set: false, preview: `Contains placeholder ("${raw.slice(0, 24)}...")`, length: len };
+      }
+      return {
+        set: true,
+        preview: `${raw.slice(0, 10)}...${raw.slice(-6)} (${len} chars)`,
+        length: len,
+      };
+    };
+
+    const envDiagnostics = {
+      NEXT_PUBLIC_SUPABASE_URL: {
+        configured: !isUrlPlaceholder,
+        ...maskUrl(url),
+        isPlaceholder: isUrlPlaceholder,
+      },
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: {
+        configured: !isAnonPlaceholder,
+        ...maskKey(anonKey),
+        isPlaceholder: isAnonPlaceholder,
+      },
+      SUPABASE_SERVICE_ROLE_KEY: {
+        configured: !isServicePlaceholder,
+        ...maskKey(serviceRoleKey),
+        isPlaceholder: isServicePlaceholder,
+      },
+    };
+
+    if (!isConfigured) {
+      const missingKeys: string[] = [];
+      if (isUrlPlaceholder) missingKeys.push("NEXT_PUBLIC_SUPABASE_URL");
+      if (isServicePlaceholder) missingKeys.push("SUPABASE_SERVICE_ROLE_KEY");
+      if (isAnonPlaceholder) missingKeys.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
       return NextResponse.json({
         isLiveConnected: false,
         mode: "memory",
-        message:
-          "Supabase environment variables are missing or set to placeholders on Vercel. Data is being stored in temporary server RAM and resets every 1–2 minutes when the server sleeps.",
-        envStatus: {
-          NEXT_PUBLIC_SUPABASE_URL: isUrlConfigured,
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: isAnonKeyConfigured,
-          SUPABASE_SERVICE_ROLE_KEY: isServiceKeyConfigured,
-        },
+        message: `Supabase environment variables are missing or set to placeholders on Vercel: [${missingKeys.join(", ")}]. Data is currently stored in temporary server RAM and resets every 1–2 minutes when the serverless function sleeps.`,
+        missingKeys,
+        envDiagnostics,
       });
     }
 
-    // Perform live table accessibility checks
+    // Attempt live connection & table checks
     try {
       const admin = createAdminClient();
       const [studentsCheck, regCheck, mcqCheck, settingsCheck] = await Promise.allSettled([
@@ -52,33 +92,49 @@ export async function GET() {
         admin.from("competition_settings").select("id").limit(1),
       ]);
 
-      const tables = {
-        students: studentsCheck.status === "fulfilled" && !studentsCheck.value.error,
-        student_registrations: regCheck.status === "fulfilled" && !regCheck.value.error,
-        mcq_questions: mcqCheck.status === "fulfilled" && !mcqCheck.value.error,
-        competition_settings: settingsCheck.status === "fulfilled" && !settingsCheck.value.error,
+      const formatSettled = (check: PromiseSettledResult<{ data: unknown; error: { message?: string } | null }>) => {
+        if (check.status === "rejected") {
+          const err = check.reason as { message?: string } | undefined;
+          return { ready: false, error: String(err?.message || check.reason) };
+        }
+        if (check.value.error) {
+          return { ready: false, error: check.value.error.message || JSON.stringify(check.value.error) };
+        }
+        return { ready: true, error: null };
       };
 
-      const allReady = Object.values(tables).every(Boolean);
+      const tableStatus = {
+        students: formatSettled(studentsCheck),
+        student_registrations: formatSettled(regCheck),
+        mcq_questions: formatSettled(mcqCheck),
+        competition_settings: formatSettled(settingsCheck),
+      };
+
+      const allReady = Object.values(tableStatus).every((t) => t.ready);
+      const tables = Object.fromEntries(Object.entries(tableStatus).map(([k, v]) => [k, v.ready]));
+      const tableErrors = Object.fromEntries(
+        Object.entries(tableStatus)
+          .filter(([, v]) => Boolean(v.error))
+          .map(([k, v]) => [k, v.error])
+      );
 
       return NextResponse.json({
         isLiveConnected: allReady,
-        mode: allReady ? "supabase" : "tables_missing",
-        envStatus: {
-          NEXT_PUBLIC_SUPABASE_URL: isUrlConfigured,
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: isAnonKeyConfigured,
-          SUPABASE_SERVICE_ROLE_KEY: isServiceKeyConfigured,
-        },
+        mode: allReady ? "supabase" : "tables_missing_or_error",
+        envDiagnostics,
         tables,
+        tableErrors: Object.keys(tableErrors).length > 0 ? tableErrors : undefined,
         message: allReady
-          ? "Supabase PostgreSQL is fully connected and operational. All student details, credentials, and scores are permanently stored."
-          : "Supabase connection succeeded, but one or more tables are missing. Please execute the COMPLETE_SUPABASE_DATABASE_SETUP.sql script in your Supabase SQL Editor.",
+          ? "Supabase PostgreSQL is fully connected and operational! All student details, credentials, and scores are permanently stored."
+          : "Supabase database is reachable, but encountered errors querying tables. Please verify COMPLETE_SUPABASE_DATABASE_SETUP.sql was executed on this database.",
       });
     } catch (err: unknown) {
       return NextResponse.json({
         isLiveConnected: false,
         mode: "connection_error",
+        envDiagnostics,
         error: err instanceof Error ? err.message : "Failed to connect to Supabase database",
+        message: "Network or authorization error connecting to Supabase with provided credentials.",
       });
     }
   } catch (error: unknown) {
@@ -86,4 +142,3 @@ export async function GET() {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isSupabaseLive } from "@/lib/supabase/admin";
 import { generateParticipantIds, generateSingleParticipantId } from "@/lib/participant-id";
 
 export interface StudentRecord {
@@ -34,19 +34,6 @@ function getLocalStore(): StudentRecord[] {
     global.__lnmcbm_local_students_store__ = [];
   }
   return global.__lnmcbm_local_students_store__;
-}
-
-function isSupabaseLive(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim().replace(/^["']|["']$/g, "");
-  return Boolean(
-    url &&
-    key &&
-    !url.includes("your-project-id") &&
-    !url.includes("placeholder") &&
-    !key.includes("your-supabase-service-role-key") &&
-    !key.includes("placeholder")
-  );
 }
 
 export const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;

@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isSupabaseLive, getSanitizedSupabaseEnv } from "@/lib/supabase/admin";
 import { generateTemporaryPassword } from "@/lib/auth/password-generator";
 import { generateSalt, hashPassword, verifyPassword } from "@/lib/auth/password-hasher";
 import { sendStudentCredentialsEmail, EmailDispatchResult } from "@/lib/email/email-service";
@@ -64,17 +64,6 @@ function getLocalEmailLogs(): EmailDeliveryRecord[] {
     global.__lnmcbm_local_email_logs__ = [];
   }
   return global.__lnmcbm_local_email_logs__;
-}
-
-function isSupabaseLive(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return Boolean(
-    url &&
-    key &&
-    !url.includes("your-project-id") &&
-    !key.includes("your-supabase-service-role-key")
-  );
 }
 
 /**
@@ -309,8 +298,7 @@ export async function authenticateStudent(
     }
 
     // 2. Authenticate against Supabase Auth using email + password mapping via Anon client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSanitizedSupabaseEnv();
     const authClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,

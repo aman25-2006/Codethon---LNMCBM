@@ -37,7 +37,17 @@ export function DatabasePersistenceModal({
     mode: string;
     message: string;
     tables?: Record<string, boolean>;
-    envStatus?: Record<string, boolean>;
+    tableErrors?: Record<string, string>;
+    envDiagnostics?: Record<
+      string,
+      {
+        configured: boolean;
+        preview: string;
+        isPlaceholder: boolean;
+        length?: number;
+      }
+    >;
+    missingKeys?: string[];
   } | null>(null);
 
   const handleTestConnection = React.useCallback(async () => {
@@ -121,7 +131,7 @@ export function DatabasePersistenceModal({
         {/* Live Test Status Card */}
         {testResult && (
           <div
-            className={`p-4 rounded-xl text-xs space-y-2 border ${
+            className={`p-4 rounded-xl text-xs space-y-3 border ${
               testResult.isLiveConnected
                 ? "bg-emerald-50 border-emerald-300 text-emerald-950"
                 : "bg-amber-50 border-amber-300 text-amber-950"
@@ -131,12 +141,12 @@ export function DatabasePersistenceModal({
               <div className="font-extrabold text-sm flex items-center gap-2">
                 {testResult.isLiveConnected ? (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                     <span>Supabase PostgreSQL Connected &amp; Persistent!</span>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
                     <span>Database Status ({testResult.mode})</span>
                   </>
                 )}
@@ -152,20 +162,77 @@ export function DatabasePersistenceModal({
                 Re-test
               </Button>
             </div>
+
             <p className="text-xs leading-relaxed">{testResult.message}</p>
+
+            {/* Server Environment Variable Diagnostic Breakdown */}
+            {testResult.envDiagnostics && (
+              <div className="rounded-lg bg-white/90 border border-slate-200 p-3 space-y-2 mt-2">
+                <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                  <Server className="w-3.5 h-3.5 text-slate-500" />
+                  Live Vercel Server Environment Status:
+                </div>
+                <div className="space-y-1.5 font-mono text-[11px]">
+                  {Object.entries(testResult.envDiagnostics).map(([key, info]) => (
+                    <div
+                      key={key}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded bg-slate-50 border border-slate-200 gap-1"
+                    >
+                      <div>
+                        <span className="font-bold text-slate-800">{key}</span>
+                        <div className="text-[10px] text-slate-500 font-sans mt-0.5">
+                          Value: <code className="font-mono text-slate-700">{info.preview}</code>
+                        </div>
+                      </div>
+                      <div>
+                        {info.configured ? (
+                          <Badge variant="success" className="text-[10px] py-0 px-2 font-semibold">
+                            VALID ✓
+                          </Badge>
+                        ) : (
+                          <Badge variant="danger" className="text-[10px] py-0 px-2 font-semibold">
+                            {info.isPlaceholder ? "PLACEHOLDER ✗" : "MISSING ✗"}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Table Accessibility Status */}
             {testResult.tables && (
-              <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]">
-                {Object.entries(testResult.tables).map(([table, ready]) => (
-                  <span
-                    key={table}
-                    className={`px-2 py-0.5 rounded border font-semibold ${
-                      ready
-                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                        : "bg-rose-100 text-rose-800 border-rose-300"
-                    }`}
-                  >
-                    {table}: {ready ? "READY ✓" : "MISSING ✗"}
-                  </span>
+              <div className="space-y-1 pt-1">
+                <div className="text-[11px] font-bold text-slate-700">Verified Database Tables:</div>
+                <div className="flex flex-wrap gap-2 font-mono text-[10px]">
+                  {Object.entries(testResult.tables).map(([table, ready]) => (
+                    <span
+                      key={table}
+                      className={`px-2 py-0.5 rounded border font-semibold ${
+                        ready
+                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                          : "bg-rose-100 text-rose-800 border-rose-300"
+                      }`}
+                    >
+                      {table}: {ready ? "READY ✓" : "MISSING ✗"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Table Query Errors (if any) */}
+            {testResult.tableErrors && Object.keys(testResult.tableErrors).length > 0 && (
+              <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-xs text-rose-900 space-y-1.5 mt-2">
+                <div className="font-bold flex items-center gap-1.5 text-rose-800">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  Database Query Diagnostics:
+                </div>
+                {Object.entries(testResult.tableErrors).map(([table, err]) => (
+                  <div key={table} className="font-mono text-[11px]">
+                    <span className="font-bold">{table}:</span> {err}
+                  </div>
                 ))}
               </div>
             )}
@@ -190,10 +257,10 @@ export function DatabasePersistenceModal({
           </p>
         </div>
 
-        {/* 3 Step Setup Guide */}
+        {/* 4 Step Setup Guide */}
         <div className="space-y-4">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-            3 Steps To Permanent Persistence (Takes 3 Minutes):
+            Steps To Permanent Persistence (Takes 3 Minutes):
           </h3>
 
           {/* Step 1 */}
@@ -213,38 +280,40 @@ export function DatabasePersistenceModal({
               </a>
             </div>
             <p className="text-xs text-slate-600">
-              Go to <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-blue-600 underline">supabase.com</a>, log in or create a free project named <strong>LNMCBM-Codethon</strong>.
+              Go to <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-blue-600 underline">supabase.com</a>, log in or open your project named <strong>codethon---LNMCBM</strong>.
             </p>
           </div>
 
           {/* Step 2 */}
-          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold">2</span>
                 Run SQL Setup in Supabase (Creates All Permanent Tables)
               </span>
+              <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Already Completed
+              </span>
             </div>
             <p className="text-xs text-slate-600">
-              In your Supabase dashboard, click <strong>SQL Editor</strong> on the left, click <strong>New Query</strong>, paste the content of <code className="px-1 py-0.5 rounded bg-slate-200 text-slate-800 font-mono text-[11px]">supabase/COMPLETE_SUPABASE_DATABASE_SETUP.sql</code>, and click <strong>Run</strong>.
+              In your Supabase dashboard, click <strong>SQL Editor</strong> on the left, paste the content of{" "}
+              <code className="px-1.5 py-0.5 rounded bg-slate-200 font-mono text-[11px]">supabase/COMPLETE_SUPABASE_DATABASE_SETUP.sql</code>, and click <strong>Run</strong>.
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  handleCopy("supabase/COMPLETE_SUPABASE_DATABASE_SETUP.sql", "sql_path");
-                }}
-                className="text-xs font-semibold"
+                onClick={() => handleCopy("supabase/COMPLETE_SUPABASE_DATABASE_SETUP.sql", "sql_path")}
+                className="h-7 text-xs"
               >
                 {copiedKey === "sql_path" ? (
                   <>
-                    <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                    Copied Path!
+                    <Check className="w-3 h-3 mr-1 text-emerald-600" />
+                    Copied Path
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5 mr-1.5" />
+                    <Copy className="w-3 h-3 mr-1" />
                     Copy SQL File Path
                   </>
                 )}
@@ -257,7 +326,7 @@ export function DatabasePersistenceModal({
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-bold">3</span>
-                Add These 3 Keys in Vercel Environment Variables
+                Copy Real Keys from Supabase → Paste into Vercel
               </span>
               <a
                 href="https://vercel.com/dashboard"
@@ -269,14 +338,16 @@ export function DatabasePersistenceModal({
               </a>
             </div>
             <p className="text-xs text-slate-600">
-              In Vercel, go to <strong>Project Settings → Environment Variables</strong> and add these 3 variables (found in Supabase under <strong>Project Settings → API</strong>):
+              In Supabase, click <strong>Settings (⚙️ gear icon at bottom left) → API</strong>. In Vercel, go to <strong>Project Settings → Environment Variables</strong>:
             </p>
 
             <div className="space-y-2 text-xs font-mono">
               <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200">
                 <div className="space-y-0.5">
                   <span className="font-bold text-slate-800">NEXT_PUBLIC_SUPABASE_URL</span>
-                  <span className="block text-[11px] text-slate-400 font-sans">Your Supabase Project URL (e.g. https://xyz.supabase.co)</span>
+                  <span className="block text-[11px] text-slate-400 font-sans">
+                    Project URL from Supabase Settings → API (e.g. https://[your-ref].supabase.co)
+                  </span>
                 </div>
                 <Button
                   size="sm"
@@ -291,7 +362,9 @@ export function DatabasePersistenceModal({
               <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200">
                 <div className="space-y-0.5">
                   <span className="font-bold text-slate-800">NEXT_PUBLIC_SUPABASE_ANON_KEY</span>
-                  <span className="block text-[11px] text-slate-400 font-sans">Client anon public key (starts with eyJhbGciOi...)</span>
+                  <span className="block text-[11px] text-slate-400 font-sans">
+                    Client anon public key from Supabase Settings → API (starts with eyJhbGciOi...)
+                  </span>
                 </div>
                 <Button
                   size="sm"
@@ -306,7 +379,9 @@ export function DatabasePersistenceModal({
               <div className="flex items-center justify-between p-2 rounded bg-white border border-slate-200">
                 <div className="space-y-0.5">
                   <span className="font-bold text-slate-800">SUPABASE_SERVICE_ROLE_KEY</span>
-                  <span className="block text-[11px] text-slate-400 font-sans">Private service_role secret key (never expose to public)</span>
+                  <span className="block text-[11px] text-slate-400 font-sans">
+                    Private service_role secret key from Supabase Settings → API (starts with eyJhbGciOi...)
+                  </span>
                 </div>
                 <Button
                   size="sm"
@@ -319,71 +394,29 @@ export function DatabasePersistenceModal({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Live Test Connection Card */}
-        <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                Check Live Database Connection
-              </h4>
-              <p className="text-xs text-slate-500">
-                Verify if your deployed app can reach Supabase and query required tables.
-              </p>
+          {/* Step 4 */}
+          <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/70 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-blue-700 text-white flex items-center justify-center text-[11px] font-bold">4</span>
+                Trigger a Clean Redeployment on Vercel
+              </span>
+              <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-200">
+                Required Step
+              </span>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleTestConnection}
-              disabled={testing}
-              className="text-xs font-semibold"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${testing ? "animate-spin" : ""}`} />
-              Test Connection
-            </Button>
+            <p className="text-xs text-blue-950 leading-relaxed">
+              <strong>Why this is essential:</strong> Vercel serverless cloud functions <u>do not</u> update automatically when you edit environment variables.
+              They continue running the previous container until a new deployment is triggered.
+            </p>
+            <ol className="text-xs text-blue-900 list-decimal list-inside space-y-1 pl-1">
+              <li>In Vercel, open your project and click the <strong>Deployments</strong> tab.</li>
+              <li>On the latest deployment (top row), click the <strong>three dots (...)</strong> on the far right.</li>
+              <li>Click <strong>Redeploy</strong>.</li>
+              <li>Uncheck <em>&quot;Use existing Build Cache&quot;</em> and click <strong>Redeploy</strong>.</li>
+            </ol>
           </div>
-
-          {testResult && (
-            <div
-              className={`p-3 rounded-lg text-xs space-y-1.5 border ${
-                testResult.isLiveConnected
-                  ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                  : "bg-amber-50 border-amber-200 text-amber-900"
-              }`}
-            >
-              <div className="font-bold flex items-center gap-1.5">
-                {testResult.isLiveConnected ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    Supabase PostgreSQL Connected &amp; Persistent!
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    Database Not Fully Ready ({testResult.mode})
-                  </>
-                )}
-              </div>
-              <p className="text-[11px] leading-relaxed">{testResult.message}</p>
-              {testResult.tables && (
-                <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]">
-                  {Object.entries(testResult.tables).map(([table, ready]) => (
-                    <span
-                      key={table}
-                      className={`px-1.5 py-0.5 rounded border ${
-                        ready
-                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                          : "bg-rose-100 text-rose-800 border-rose-300"
-                      }`}
-                    >
-                      {table}: {ready ? "READY" : "MISSING"}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Footer */}
@@ -396,4 +429,3 @@ export function DatabasePersistenceModal({
     </div>
   );
 }
-
