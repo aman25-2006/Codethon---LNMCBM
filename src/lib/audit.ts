@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isSupabaseLive } from "@/lib/supabase/admin";
 
 export interface AuditLogEntry {
   id?: string;
@@ -23,17 +23,6 @@ function getLocalAuditStore(): AuditLogEntry[] {
     global.__lnmcbm_local_audit_logs__ = [];
   }
   return global.__lnmcbm_local_audit_logs__;
-}
-
-function isSupabaseLive(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return Boolean(
-    url &&
-    key &&
-    !url.includes("your-project-id") &&
-    !key.includes("your-supabase-service-role-key")
-  );
 }
 
 /**

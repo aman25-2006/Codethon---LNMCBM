@@ -172,7 +172,9 @@ export default function Phase1ExaminationPage() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/student/competition-status");
+        const res = await fetch(`/api/student/competition-status?t=${Date.now()}`, {
+          cache: "no-store",
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.status && data.status !== "in_progress") {
@@ -190,7 +192,7 @@ export default function Phase1ExaminationPage() {
       } catch {
         // network jitter, ignore
       }
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [phase1Completed, isTerminated, isExamStoppedByAdmin, router]);

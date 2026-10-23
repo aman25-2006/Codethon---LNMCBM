@@ -132,7 +132,9 @@ export default function StudentDashboardPage() {
 
       // 2. Get competition status
       try {
-        const compRes = await fetch("/api/student/competition-status");
+        const compRes = await fetch(`/api/student/competition-status?t=${Date.now()}`, {
+          cache: "no-store",
+        });
         if (compRes.ok) {
           const compData = await compRes.json();
           setCompetitionStatus(compData.status || "draft");
@@ -188,7 +190,9 @@ export default function StudentDashboardPage() {
     // Live background sync: dynamically unlock or lock test when admin clicks Start / Stop
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/student/competition-status");
+        const res = await fetch(`/api/student/competition-status?t=${Date.now()}`, {
+          cache: "no-store",
+        });
         if (res.ok) {
           const d = await res.json();
           setCompetitionStatus(d.status || "draft");
@@ -197,7 +201,7 @@ export default function StudentDashboardPage() {
       } catch {
         // network jitter, ignore
       }
-    }, 4000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [loadDashboardData]);
@@ -289,10 +293,22 @@ export default function StudentDashboardPage() {
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
               Competition Status
             </span>
-            <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5 sm:justify-end">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Codethon 2026 Live
-            </span>
+            {isTestLive ? (
+              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5 sm:justify-end">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Test is LIVE
+              </span>
+            ) : competitionStatus === "completed" || competitionStatus === "results_published" ? (
+              <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5 sm:justify-end">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                Exam Concluded
+              </span>
+            ) : (
+              <span className="text-xs font-bold text-amber-700 flex items-center gap-1.5 sm:justify-end">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                Waiting to Start
+              </span>
+            )}
           </div>
 
           <Button

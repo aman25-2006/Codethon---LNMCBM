@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isSupabaseLive } from "@/lib/supabase/admin";
 import { logAuditEvent } from "@/lib/audit";
 import { getStudents } from "@/lib/services/students-service";
 import { getQuestions } from "@/lib/services/questions-service";
@@ -95,17 +95,6 @@ function getLocalSettingsStore(): CompetitionSettingsDTO {
   return global.__lnmcbm_local_competition_settings__;
 }
 
-function isSupabaseLive(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return Boolean(
-    url &&
-    key &&
-    !url.includes("your-project-id") &&
-    !key.includes("your-supabase-service-role-key")
-  );
-}
-
 /**
  * Retrieves global competition settings from database or local memory store.
  */
@@ -116,34 +105,38 @@ export async function getCompetitionSettings(): Promise<CompetitionSettingsDTO> 
       const { data, error } = await admin
         .from("competition_settings")
         .select("*")
+        .order("updated_at", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (!error && data) {
-        return {
+        const dto: CompetitionSettingsDTO = {
           id: data.id,
-          competition_name: data.competition_name,
-          college_name: data.college_name,
-          college_logo_url: data.college_logo_url,
-          competition_date: data.competition_date,
-          registration_status: data.registration_status as "open" | "closed",
-          status: data.status as CompetitionStatus,
-          phase1_duration_minutes: data.phase1_duration_minutes,
-          phase2_duration_minutes: data.phase2_duration_minutes,
-          fullscreen_warning_threshold: data.fullscreen_warning_threshold,
-          eligible_coding_categories: (data.eligible_coding_categories || []) as CodingCategory[],
+          competition_name: data.competition_name || DEFAULT_COMPETITION_SETTINGS.competition_name,
+          college_name: data.college_name || DEFAULT_COMPETITION_SETTINGS.college_name,
+          college_logo_url: data.college_logo_url || DEFAULT_COMPETITION_SETTINGS.college_logo_url,
+          competition_date: data.competition_date || DEFAULT_COMPETITION_SETTINGS.competition_date,
+          registration_status: (data.registration_status as "open" | "closed") || "open",
+          status: (data.status as CompetitionStatus) || "draft",
+          phase1_duration_minutes: data.phase1_duration_minutes || 45,
+          phase2_duration_minutes: data.phase2_duration_minutes || 30,
+          fullscreen_warning_threshold: data.fullscreen_warning_threshold || 3,
+          eligible_coding_categories: (data.eligible_coding_categories || DEFAULT_COMPETITION_SETTINGS.eligible_coding_categories) as CodingCategory[],
           results_published: Boolean(data.results_published),
-          participant_instructions: data.participant_instructions,
-          contact_email: data.contact_email,
-          contact_phone: data.contact_phone,
-          created_at: data.created_at,
-          updated_at: data.updated_at,
+          participant_instructions: data.participant_instructions || DEFAULT_COMPETITION_SETTINGS.participant_instructions,
+          contact_email: data.contact_email || DEFAULT_COMPETITION_SETTINGS.contact_email,
+          contact_phone: data.contact_phone || DEFAULT_COMPETITION_SETTINGS.contact_phone,
+          created_at: data.created_at || new Date().toISOString(),
+          updated_at: data.updated_at || new Date().toISOString(),
         };
+        // Keep in-memory store in sync with the database source of truth
+        global.__lnmcbm_local_competition_settings__ = { ...dto };
+        return dto;
       }
 
       // If no row exists, initialize default
-      const { data: inserted } = await admin
+      const { data: inserted, error: insertError } = await admin
         .from("competition_settings")
         .insert({
           competition_name: DEFAULT_COMPETITION_SETTINGS.competition_name,
@@ -164,8 +157,10 @@ export async function getCompetitionSettings(): Promise<CompetitionSettingsDTO> 
         .select("*")
         .single();
 
-      if (inserted) {
-        return inserted as unknown as CompetitionSettingsDTO;
+      if (!insertError && inserted) {
+        const dto = inserted as unknown as CompetitionSettingsDTO;
+        global.__lnmcbm_local_competition_settings__ = { ...dto };
+        return dto;
       }
     } catch (err) {
       console.warn("Supabase competition_settings query error, falling back to local store:", err);
@@ -555,29 +550,59 @@ export async function updateCompetitionSettings(
 
   if (isSupabaseLive()) {
     const admin = createAdminClient();
-    await admin
+    const dbUpdatePayload: Record<string, any> = {
+      updated_at: nowIso,
+    };
+    if (updates.status !== undefined) dbUpdatePayload.status = updates.status;
+    if (updates.registration_status !== undefined) dbUpdatePayload.registration_status = updates.registration_status;
+    if (updates.competition_name !== undefined) dbUpdatePayload.competition_name = updates.competition_name;
+    if (updates.college_name !== undefined) dbUpdatePayload.college_name = updates.college_name;
+    if (updates.college_logo_url !== undefined) dbUpdatePayload.college_logo_url = updates.college_logo_url;
+    if (updates.competition_date !== undefined) dbUpdatePayload.competition_date = updates.competition_date;
+    if (updates.phase1_duration_minutes !== undefined) dbUpdatePayload.phase1_duration_minutes = updates.phase1_duration_minutes;
+    if (updates.phase2_duration_minutes !== undefined) dbUpdatePayload.phase2_duration_minutes = updates.phase2_duration_minutes;
+    if (updates.fullscreen_warning_threshold !== undefined) dbUpdatePayload.fullscreen_warning_threshold = updates.fullscreen_warning_threshold;
+    if (updates.eligible_coding_categories !== undefined) dbUpdatePayload.eligible_coding_categories = updates.eligible_coding_categories;
+    if (updates.results_published !== undefined) dbUpdatePayload.results_published = updates.results_published;
+    if (updates.participant_instructions !== undefined) dbUpdatePayload.participant_instructions = updates.participant_instructions;
+    if (updates.contact_email !== undefined) dbUpdatePayload.contact_email = updates.contact_email;
+    if (updates.contact_phone !== undefined) dbUpdatePayload.contact_phone = updates.contact_phone;
+
+    // Update ALL rows in the singleton competition_settings table so no stale rows survive
+    const { data: updatedRows, error: updateError } = await admin
       .from("competition_settings")
-      .update({
-        competition_name: merged.competition_name,
-        college_name: merged.college_name,
-        college_logo_url: merged.college_logo_url,
-        competition_date: merged.competition_date,
-        registration_status: merged.registration_status,
-        status: merged.status,
-        phase1_duration_minutes: merged.phase1_duration_minutes,
-        phase2_duration_minutes: merged.phase2_duration_minutes,
-        fullscreen_warning_threshold: merged.fullscreen_warning_threshold,
-        eligible_coding_categories: merged.eligible_coding_categories,
-        results_published: merged.results_published,
-        participant_instructions: merged.participant_instructions,
-        contact_email: merged.contact_email,
-        contact_phone: merged.contact_phone,
-        updated_at: nowIso,
-      })
-      .eq("id", current.id);
-  } else {
-    global.__lnmcbm_local_competition_settings__ = { ...merged };
+      .update(dbUpdatePayload)
+      .not("id", "is", null)
+      .select();
+
+    if (updateError) {
+      console.error("Critical error updating competition_settings in Supabase:", updateError);
+      throw new Error(`Database error updating competition status: ${updateError.message}`);
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      // If table was completely empty, insert initial record
+      const { data: insertedRow, error: insertError } = await admin
+        .from("competition_settings")
+        .insert({
+          ...DEFAULT_COMPETITION_SETTINGS,
+          ...dbUpdatePayload,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Critical error inserting competition_settings in Supabase:", insertError);
+        throw new Error(`Database error initializing competition status: ${insertError.message}`);
+      }
+      if (insertedRow) {
+        merged.id = insertedRow.id;
+      }
+    }
   }
+
+  // Always keep in-memory global store in sync
+  global.__lnmcbm_local_competition_settings__ = { ...merged };
 
   await logAuditEvent({
     actorId: actor.id,

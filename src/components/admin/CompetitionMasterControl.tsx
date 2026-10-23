@@ -31,7 +31,9 @@ export function CompetitionMasterControl({ onStatusChange, compact }: Competitio
 
   const fetchStatus = React.useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/competition/toggle");
+      const res = await fetch(`/api/admin/competition/toggle?t=${Date.now()}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
         setStatus(data.status);

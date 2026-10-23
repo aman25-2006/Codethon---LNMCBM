@@ -206,7 +206,9 @@ export default function Phase2ExamWorkspacePage() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/student/competition-status");
+        const res = await fetch(`/api/student/competition-status?t=${Date.now()}`, {
+          cache: "no-store",
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.status && data.status !== "in_progress") {
@@ -219,7 +221,7 @@ export default function Phase2ExamWorkspacePage() {
       } catch {
         // network jitter, ignore
       }
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [sessionStatus, isTerminated, isExamStoppedByAdmin, router]);
