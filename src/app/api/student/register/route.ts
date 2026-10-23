@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: result.message,
       id: result.id,
+      student: result.student,
+      emailDispatched: result.emailDispatched,
     });
   } catch (error: unknown) {
     console.error("POST /api/student/register error:", error);

@@ -20,12 +20,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const DEPARTMENTS = [
   "BCA (Bachelor of Computer Applications)",
   "MCA (Master of Computer Applications)",
+  "BCA",
+  "MCA",
   "BBA (Bachelor of Business Administration)",
   "MBA (Master of Business Administration)",
+  "BBA",
+  "MBA",
   "B.Com (Professional)",
   "Information Technology",
   "Computer Science",
@@ -59,6 +64,14 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = React.useState(false);
+  const [registeredStudent, setRegisteredStudent] = React.useState<{
+    id: string;
+    roll_number: string;
+    full_name: string;
+    participant_id: string;
+    course: string;
+    email: string;
+  } | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -180,6 +193,9 @@ export default function RegisterPage() {
         return;
       }
 
+      if (data.student) {
+        setRegisteredStudent(data.student);
+      }
       setIsSubmitted(true);
     } catch {
       setFormError("A network error occurred. Please check your connection and try again.");
@@ -227,43 +243,70 @@ export default function RegisterPage() {
 
         {/* Success Confirmation Screen */}
         {isSubmitted ? (
-          <Card className="shadow-lg border-emerald-200 bg-white">
-            <CardContent className="pt-8 pb-8 px-6 text-center space-y-4">
+          <Card className="shadow-lg border-emerald-300 bg-white">
+            <CardContent className="pt-8 pb-8 px-6 text-center space-y-5">
               <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-xl font-extrabold text-slate-900">
-                  Registration Request Submitted!
+                <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  ✓ Registration Completed &amp; Credentials Dispatched
+                </span>
+                <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">
+                  Registration Successful!
                 </h2>
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl max-w-lg mx-auto text-emerald-950 font-medium text-sm leading-relaxed">
-                  Your request has been submitted successfully! Our team will verify it and send the mail soon. Thank you for registering.
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto">
+                  Your official examination login credentials have been generated and dispatched directly to your email address.
+                </p>
+              </div>
+
+              {/* Enrolled Candidate Summary */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 max-w-md mx-auto text-left text-xs space-y-3 shadow-xs">
+                <div className="font-bold text-slate-800 flex items-center justify-between border-b border-slate-200 pb-2">
+                  <span className="flex items-center gap-1.5">
+                    <User className="w-4 h-4 text-blue-600" />
+                    Enrolled Candidate Details
+                  </span>
+                  <Badge variant="success" className="text-[10px]">
+                    Active
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <span className="text-[11px] text-slate-500 block">Candidate Name</span>
+                    <strong className="text-slate-900 font-semibold">{registeredStudent?.full_name || fullName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block">Roll Number</span>
+                    <strong className="text-slate-900 font-mono font-bold">{registeredStudent?.roll_number || rollNumber}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block">Participant ID</span>
+                    <strong className="text-blue-700 font-mono font-bold">{registeredStudent?.participant_id || "Assigned"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500 block">Course</span>
+                    <strong className="text-slate-800">{registeredStudent?.course || department}</strong>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 max-w-md mx-auto text-left text-xs space-y-2 text-slate-600">
-                <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  What happens next?
+              {/* Email Delivery Alert */}
+              <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-xl max-w-md mx-auto text-emerald-950 text-xs text-left space-y-1.5 shadow-xs">
+                <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+                  <Mail className="w-4 h-4 text-emerald-600 shrink-0" />
+                  Check Your Email Inbox &amp; Spam Folder
                 </div>
-                <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                  <li>
-                    The examination cell will verify your student ID card and details.
-                  </li>
-                  <li>
-                    Once approved, your unique temporary password and participant ID will be emailed to <strong className="text-slate-900">{email}</strong>.
-                  </li>
-                  <li>
-                    Keep your College Identity Card ready for physical invigilator verification on exam day.
-                  </li>
-                </ul>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  Your login password has been sent to <strong className="text-emerald-950 underline">{registeredStudent?.email || email}</strong> from <span className="font-mono font-semibold">lnmcbmhackathoncell@gmail.com</span>. Please check your inbox (and spam/junk folder) right now to sign in.
+                </p>
               </div>
 
-              <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href="/login/student" className="w-full sm:w-auto">
-                  <Button variant="primary" className="w-full text-xs font-bold py-2.5 px-6">
-                    Return to Student Login
+                  <Button variant="primary" className="w-full text-xs font-bold py-2.5 px-6 bg-blue-600 hover:bg-blue-700">
+                    Proceed to Student Login →
                   </Button>
                 </Link>
                 <Link href="/" className="w-full sm:w-auto">
@@ -439,8 +482,16 @@ export default function RegisterPage() {
                 {/* 5. ID Card Upload (Max 2 MB, PNG/JPEG/JPG) */}
                 <div className="pt-2">
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                    College ID Card Photo (PNG, JPG, or JPEG $\le$ 2 MB) <span className="text-red-600 font-bold">*</span>
+                    College ID Card or Admission Receipt Photo (PNG, JPG, or JPEG ≤ 2 MB) <span className="text-red-600 font-bold">*</span>
                   </label>
+
+                  {/* Special Note for 1st Year Students as requested */}
+                  <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-950 text-xs flex items-start gap-2.5 mb-3 shadow-xs">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <strong className="font-bold text-amber-950">Notice for 1st Year Students:</strong> The first year students who don&apos;t get their ID Card are requested to upload their <strong>Admission Receipt</strong>.
+                    </div>
+                  </div>
 
                   {idCardError && (
                     <div className="mb-2 text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2 rounded-lg flex items-center gap-1.5">
@@ -465,7 +516,7 @@ export default function RegisterPage() {
                       />
                       <UploadCloud className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                       <p className="text-xs font-bold text-slate-800">
-                        Click to upload your College ID Card or drag and drop
+                        Click to upload College ID Card or Admission Receipt (or drag and drop)
                       </p>
                       <p className="text-[11px] text-slate-500 mt-1">
                         PNG, JPG, or JPEG format only • Strictly maximum 2 MB

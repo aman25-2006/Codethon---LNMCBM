@@ -64,15 +64,32 @@ function getBase64SizeBytes(base64String: string): number {
   return Math.floor((base64Data.length * 3) / 4) - padding;
 }
 
+export interface RegistrationSubmitResult {
+  success: boolean;
+  message: string;
+  id: string;
+  student: {
+    id: string;
+    roll_number: string;
+    full_name: string;
+    participant_id: string;
+    course: string;
+    email: string;
+  };
+  emailDispatched: boolean;
+}
+
 /**
- * Submits a new candidate self-registration request.
- * All fields are mandatory. File size must not exceed 2 MB.
+ * Submits a new candidate self-registration:
+ * - Automatically registers and activates candidate profile in the students directory.
+ * - Immediately provisions login credentials and dispatches official email from lnmcbmhackathoncell@gmail.com.
+ * - Stores ID Card / Admission receipt permanently in student_registrations for invigilator reference.
  */
 export async function submitRegistrationRequest(
   input: RegistrationInput
-): Promise<{ success: boolean; message: string; id: string }> {
+): Promise<RegistrationSubmitResult> {
   const full_name = input.full_name?.trim();
-  const roll_number = input.roll_number?.trim();
+  const roll_number = input.roll_number?.trim().toUpperCase();
   const email = input.email?.trim().toLowerCase();
   const department = input.department?.trim();
   const semester = input.semester?.trim();
@@ -99,7 +116,7 @@ export async function submitRegistrationRequest(
     throw new Error("A valid 10-digit mobile number is mandatory.");
   }
   if (!id_card_data) {
-    throw new Error("College ID Card photo is mandatory.");
+    throw new Error("College ID Card or Admission Receipt photo is mandatory.");
   }
 
   // 2. MIME and File Size validation (strict 2MB limit)
@@ -119,121 +136,126 @@ export async function submitRegistrationRequest(
   const fileSizeBytes = getBase64SizeBytes(id_card_data);
   if (fileSizeBytes > MAX_FILE_SIZE_BYTES) {
     const sizeMb = (fileSizeBytes / (1024 * 1024)).toFixed(2);
-    throw new Error(`ID Card photo size (${sizeMb} MB) exceeds the 2 MB limit. Please upload a smaller image.`);
+    throw new Error(`Uploaded photo size (${sizeMb} MB) exceeds the 2 MB limit. Please upload an image under 2 MB.`);
   }
 
   const nowIso = new Date().toISOString();
+  const formattedCourse = `${department} (Sem ${semester})`;
 
-  // 3. Supabase or Local Storage
+  // 3. Duplicate enrollment prevention: check if student is already in the roster
   if (isSupabaseLive()) {
     const admin = createAdminClient();
-
-    // Check duplicate pending request
-    const { data: existingPending, error: pendingCheckErr } = await admin
-      .from("student_registrations")
-      .select("id, status")
-      .or(`roll_number.eq.${roll_number},email.eq.${email}`)
-      .eq("status", "pending")
-      .maybeSingle();
-
-    if (pendingCheckErr) {
-      console.error("Supabase pending check error:", pendingCheckErr);
-      throw new Error(`Failed to submit registration: ${pendingCheckErr.message}`);
-    }
-
-    if (existingPending) {
-      throw new Error(
-        "A registration request with this Roll Number or Email is already pending administrative verification."
-      );
-    }
-
-    // Check if already approved/enrolled in students
     const { data: existingStudent, error: studentCheckErr } = await admin
       .from("students")
-      .select("id")
+      .select("id, roll_number, email")
       .or(`roll_number.eq.${roll_number},email.eq.${email}`)
       .maybeSingle();
 
     if (studentCheckErr) {
-      console.error("Supabase student check error:", studentCheckErr);
-      throw new Error(`Failed to submit registration: ${studentCheckErr.message}`);
-    }
-
-    if (existingStudent) {
+      console.error("Supabase student duplicate check error:", studentCheckErr);
+    } else if (existingStudent) {
       throw new Error(
-        "A candidate with this Roll Number or Email is already enrolled in the competition. Please sign in directly."
+        `A candidate with Roll Number '${roll_number}' or Email '${email}' is already enrolled in the competition. Please sign in directly.`
       );
     }
-
-    const { data: inserted, error } = await admin
-      .from("student_registrations")
-      .insert({
-        full_name,
-        roll_number,
-        email,
-        department,
-        semester,
-        mobile,
-        id_card_data,
-        id_card_mime: mime,
-        status: "pending",
-        created_at: nowIso,
-        updated_at: nowIso,
-      })
-      .select("id")
-      .single();
-
-    if (error || !inserted) {
-      console.error("Supabase registration insert error:", error);
-      throw new Error(`Failed to submit registration: ${error?.message || "Database write error"}`);
-    }
-
-    return {
-      success: true,
-      message:
-        "Your request has been submitted successfully! Our team will verify it and send the mail soon. Thank you for registering.",
-      id: inserted.id,
-    };
-  }
-
-  // Local fallback store
-  const store = getLocalStore();
-  const existingPending = store.find(
-    (r) =>
-      r.status === "pending" &&
-      (r.roll_number.toLowerCase() === roll_number.toLowerCase() ||
-        r.email.toLowerCase() === email.toLowerCase())
-  );
-
-  if (existingPending) {
-    throw new Error(
-      "A registration request with this Roll Number or Email is already pending administrative verification."
+  } else {
+    const { students } = await getStudents();
+    const existingStudent = students.find(
+      (s) =>
+        s.roll_number.toUpperCase() === roll_number ||
+        s.email.toLowerCase() === email
     );
+    if (existingStudent) {
+      throw new Error(
+        `A candidate with Roll Number '${roll_number}' or Email '${email}' is already enrolled in the competition. Please sign in directly.`
+      );
+    }
   }
 
-  const newId = `reg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-  const record: StudentRegistrationRecord = {
-    id: newId,
+  // 4. Directly create candidate in active students directory (no manual verification delay)
+  const student = await createStudent({
     full_name,
     roll_number,
+    course: formattedCourse,
     email,
-    department,
-    semester,
     mobile,
-    id_card_data,
-    id_card_mime: mime,
-    status: "pending",
-    created_at: nowIso,
-    updated_at: nowIso,
-  };
+  });
 
-  store.unshift(record);
+  // 5. Automatically issue credentials and dispatch official credentials email immediately
+  let emailDispatched = false;
+  try {
+    const credResult = await issueStudentCredentials(student.id, { sendEmail: true });
+    emailDispatched =
+      credResult.emailStatus === "accepted" || credResult.emailStatus === "delivered";
+  } catch (credErr) {
+    console.error("Failed to auto-dispatch credentials email during registration:", credErr);
+  }
+
+  // 6. Persist uploaded ID Card / Admission receipt permanently in student_registrations
+  let regId = `reg-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  if (isSupabaseLive()) {
+    try {
+      const admin = createAdminClient();
+      const { data: inserted, error: insertError } = await admin
+        .from("student_registrations")
+        .insert({
+          full_name,
+          roll_number,
+          email,
+          department,
+          semester,
+          mobile,
+          id_card_data,
+          id_card_mime: mime,
+          status: "approved",
+          student_id: student.id,
+          reviewed_at: nowIso,
+          created_at: nowIso,
+          updated_at: nowIso,
+        })
+        .select("id")
+        .single();
+
+      if (!insertError && inserted) {
+        regId = inserted.id;
+      }
+    } catch (saveErr) {
+      console.warn("Could not save to student_registrations table:", saveErr);
+    }
+  } else {
+    const store = getLocalStore();
+    store.unshift({
+      id: regId,
+      full_name,
+      roll_number,
+      email,
+      department,
+      semester,
+      mobile,
+      id_card_data,
+      id_card_mime: mime,
+      status: "approved",
+      student_id: student.id,
+      reviewed_at: nowIso,
+      created_at: nowIso,
+      updated_at: nowIso,
+    });
+  }
 
   return {
     success: true,
     message:
-      "Your request has been submitted successfully! Our team will verify it and send the mail soon. Thank you for registering.",
-    id: newId,
+      "Registration completed successfully! Your official examination login credentials (Roll Number, Participant ID, and Password) have been dispatched directly to your email address.",
+    id: regId,
+    student: {
+      id: student.id,
+      roll_number: student.roll_number,
+      full_name: student.full_name,
+      participant_id: student.participant_id,
+      course: student.course,
+      email: student.email,
+    },
+    emailDispatched,
   };
 }
 

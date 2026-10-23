@@ -375,11 +375,39 @@ export async function updateStudent(
 }
 
 /**
- * Delete a student record.
+ * Delete a student record and all associated auth and registration records.
  */
 export async function deleteStudent(id: string): Promise<boolean> {
   if (isSupabaseLive()) {
     const admin = createAdminClient();
+
+    // 1. Fetch student details to get auth_user_id and roll number
+    const { data: student } = await admin
+      .from("students")
+      .select("id, auth_user_id, roll_number, email")
+      .eq("id", id)
+      .maybeSingle();
+
+    // 2. Delete Supabase Auth account if provisioned
+    if (student?.auth_user_id) {
+      try {
+        await admin.auth.admin.deleteUser(student.auth_user_id);
+      } catch (authErr) {
+        console.warn("Could not delete Supabase auth user:", authErr);
+      }
+    }
+
+    // 3. Remove corresponding student_registrations record
+    try {
+      await admin.from("student_registrations").delete().eq("student_id", id);
+      if (student?.roll_number) {
+        await admin.from("student_registrations").delete().eq("roll_number", student.roll_number);
+      }
+    } catch (regErr) {
+      console.warn("Could not clean up student_registrations record:", regErr);
+    }
+
+    // 4. Delete the student record
     const { error } = await admin.from("students").delete().eq("id", id);
     if (error) {
       throw new Error(`Failed to delete student: ${error.message}`);
@@ -392,7 +420,17 @@ export async function deleteStudent(id: string): Promise<boolean> {
   if (index === -1) {
     throw new Error("Student not found.");
   }
-  store.splice(index, 1);
+  const removed = store.splice(index, 1)[0];
+
+  // Also clean local registration store if present
+  const regStore = ((global as any).__lnmcbm_local_registrations_store__ || []) as any[];
+  const regIdx = regStore.findIndex(
+    (r: any) => r.student_id === id || r.roll_number?.toUpperCase() === removed.roll_number?.toUpperCase()
+  );
+  if (regIdx !== -1) {
+    regStore.splice(regIdx, 1);
+  }
+
   return true;
 }
 
