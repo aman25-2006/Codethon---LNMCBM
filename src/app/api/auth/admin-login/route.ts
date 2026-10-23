@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient, isSupabaseLive } from "@/lib/supabase/admin";
 import { logAuditEvent } from "@/lib/audit";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -26,79 +26,137 @@ export async function POST(request: Request) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
     const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "127.0.0.1";
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const isSupabaseConfigured = supabaseUrl && !supabaseUrl.includes("your-project-id");
+    const bootstrapEmail = (process.env.ADMIN_INITIAL_EMAIL || "admin@lnmcbm.ac.in").toLowerCase();
+    const bootstrapPassword = process.env.ADMIN_INITIAL_PASSWORD || "AdminLNMCBM2026!";
+    const isMasterBootstrap = cleanEmail === bootstrapEmail && cleanPassword === bootstrapPassword;
 
-    // --------------------------------------------------------------------------
-    // CASE A: Supabase Remote Project Not Yet Configured
-    // Support safe bootstrap credentials from local environment variables
-    // --------------------------------------------------------------------------
-    if (!isSupabaseConfigured) {
-      const bootstrapEmail = (process.env.ADMIN_INITIAL_EMAIL || "admin@lnmcbm.ac.in").toLowerCase();
-      const bootstrapPassword = process.env.ADMIN_INITIAL_PASSWORD || "AdminLNMCBM2026!";
+    // Helper to set both admin session cookie and JSON response
+    const createSuccessResponse = (user: { id: string; email: string; name: string; role: string }) => {
+      const response = NextResponse.json({
+        success: true,
+        user,
+      });
 
-      if (cleanEmail === bootstrapEmail && password === bootstrapPassword) {
-        const response = NextResponse.json({
-          success: true,
-          user: {
-            id: "bootstrap-admin-uuid",
-            email: cleanEmail,
-            name: "System Exam Controller (Bootstrap)",
-            role: "admin",
-          },
-        });
-
-        response.cookies.set("lnmcbm_admin_session", JSON.stringify({
-          id: "bootstrap-admin-uuid",
-          email: cleanEmail,
+      response.cookies.set(
+        "lnmcbm_admin_session",
+        JSON.stringify({
+          id: user.id,
+          email: user.email,
           role: "admin",
-          name: "System Exam Controller (Bootstrap)",
+          name: user.name,
           issuedAt: Date.now(),
-        }), {
+        }),
+        {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production" && (process.env.NEXT_PUBLIC_APP_URL || "").startsWith("https"),
           sameSite: "lax",
           path: "/",
           maxAge: 60 * 60 * 8, // 8 hours
-        });
+        }
+      );
 
-        await logAuditEvent({
-          actorEmail: cleanEmail,
-          action: "ADMIN_LOGIN_SUCCESS_BOOTSTRAP",
-          targetResource: "/login/admin",
-          details: { mode: "local_bootstrap" },
-          ipAddress,
-        });
+      return response;
+    };
 
-        return response;
+    // --------------------------------------------------------------------------
+    // CASE A: Master Bootstrap Credentials
+    // Instantly authenticates administrator and auto-seeds into Supabase Auth if needed
+    // --------------------------------------------------------------------------
+    if (isMasterBootstrap) {
+      let adminUserId = "bootstrap-admin-uuid";
+
+      if (isSupabaseLive()) {
+        try {
+          const adminClient = createAdminClient();
+
+          // 1. Check if admin user exists in Supabase auth.users
+          const { data: userList } = await adminClient.auth.admin.listUsers();
+          const existingUser = userList?.users?.find(
+            (u) => u.email?.toLowerCase() === cleanEmail
+          );
+
+          if (!existingUser) {
+            // Auto-provision admin in Supabase Auth
+            const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+              email: cleanEmail,
+              password: cleanPassword,
+              email_confirm: true,
+              user_metadata: { full_name: "Master Exam Controller", role: "admin" },
+            });
+
+            if (!createError && newUser?.user) {
+              adminUserId = newUser.user.id;
+            }
+          } else {
+            adminUserId = existingUser.id;
+            // Ensure password matches bootstrap credential
+            await adminClient.auth.admin.updateUserById(adminUserId, {
+              password: cleanPassword,
+              email_confirm: true,
+            });
+          }
+
+          // 2. Ensure admin profile exists in public.profiles table
+          if (adminUserId && adminUserId !== "bootstrap-admin-uuid") {
+            await adminClient.from("profiles").upsert(
+              {
+                id: adminUserId,
+                email: cleanEmail,
+                full_name: "Master Exam Controller",
+                role: "admin",
+              },
+              { onConflict: "id" }
+            );
+
+            // 3. Establish Supabase Server Client session
+            try {
+              const supabase = createServerSupabaseClient();
+              await supabase.auth.signInWithPassword({
+                email: cleanEmail,
+                password: cleanPassword,
+              });
+            } catch (authErr) {
+              console.warn("Supabase SSR signIn warning:", authErr);
+            }
+          }
+        } catch (dbErr) {
+          console.warn("Failed to auto-sync bootstrap admin to Supabase Auth:", dbErr);
+        }
       }
 
       await logAuditEvent({
         actorEmail: cleanEmail,
-        action: "ADMIN_LOGIN_FAILED_BOOTSTRAP",
+        action: "ADMIN_LOGIN_SUCCESS_BOOTSTRAP",
         targetResource: "/login/admin",
-        details: { mode: "local_bootstrap", reason: "Invalid credentials" },
+        details: { mode: isSupabaseLive() ? "supabase_master_bootstrap" : "local_bootstrap" },
         ipAddress,
       });
 
+      return createSuccessResponse({
+        id: adminUserId,
+        email: cleanEmail,
+        name: "Master Exam Controller",
+        role: "admin",
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // CASE B: Standard Live Remote Supabase Authentication
+    // --------------------------------------------------------------------------
+    if (!isSupabaseLive()) {
       return NextResponse.json(
-        {
-          error:
-            "Invalid credentials. Please verify your administrator email and password. (Check ADMIN_INITIAL_EMAIL and ADMIN_INITIAL_PASSWORD in your .env.local file)",
-        },
+        { error: "Invalid administrator credentials. Please check your email and password." },
         { status: 401 }
       );
     }
 
-    // --------------------------------------------------------------------------
-    // CASE B: Live Remote Supabase Authentication
-    // --------------------------------------------------------------------------
     const supabase = createServerSupabaseClient();
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
-      password,
+      password: cleanPassword,
     });
 
     if (authError || !authData?.user) {
@@ -133,7 +191,6 @@ export async function POST(request: Request) {
 
     // Verify role is strictly 'admin'
     if (profile.role !== "admin") {
-      // Ordinary student account trying to access admin console: reject & sign out immediately
       await supabase.auth.signOut();
 
       await logAuditEvent({
@@ -164,14 +221,11 @@ export async function POST(request: Request) {
       ipAddress,
     });
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: authData.user.id,
-        email: authData.user.email,
-        name: profile.full_name,
-        role: "admin",
-      },
+    return createSuccessResponse({
+      id: authData.user.id,
+      email: authData.user.email || cleanEmail,
+      name: profile.full_name || "Exam Controller",
+      role: "admin",
     });
   } catch (error) {
     console.error("Admin login API exception:", error);
