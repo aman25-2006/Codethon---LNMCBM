@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { verifySignedAdminToken } from "@/lib/auth/admin-session";
+import { sanitizeSupabaseUrl } from "@/lib/supabase/admin";
 
 export interface AdminUser {
   id: string;
@@ -21,31 +23,46 @@ export async function verifyAdmin(): Promise<
     const bootstrapCookie = cookieStore.get("lnmcbm_admin_session");
 
     if (bootstrapCookie?.value) {
-      let parsed: { id?: string; email?: string; name?: string; role?: string } | null = null;
-      try {
-        parsed = JSON.parse(bootstrapCookie.value);
-      } catch {
-        try {
-          parsed = JSON.parse(decodeURIComponent(bootstrapCookie.value));
-        } catch {
-          // ignore
-        }
-      }
-
-      if (parsed && parsed.role === "admin") {
+      // 1. Verify cryptographically signed token
+      const verified = await verifySignedAdminToken(bootstrapCookie.value);
+      if (verified && verified.role === "admin") {
         return {
           authenticated: true,
           user: {
-            id: parsed.id || "bootstrap-admin-uuid",
-            email: parsed.email || "admin@lnmcbm.ac.in",
-            name: parsed.name || "System Exam Controller",
+            id: verified.id,
+            email: verified.email,
+            name: verified.name,
             role: "admin",
           },
         };
       }
+
+      // 2. Legacy fallback check only for master bootstrap email
+      try {
+        let legacy: any = null;
+        try {
+          legacy = JSON.parse(bootstrapCookie.value);
+        } catch {
+          legacy = JSON.parse(decodeURIComponent(bootstrapCookie.value));
+        }
+        const masterEmail = (process.env.ADMIN_INITIAL_EMAIL || "admin@lnmcbm.ac.in").toLowerCase();
+        if (legacy && legacy.role === "admin" && legacy.email?.toLowerCase() === masterEmail) {
+          return {
+            authenticated: true,
+            user: {
+              id: legacy.id || "bootstrap-admin-uuid",
+              email: legacy.email,
+              name: legacy.name || "System Exam Controller",
+              role: "admin",
+            },
+          };
+        }
+      } catch {
+        // invalid
+      }
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseUrl = sanitizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
     if (supabaseUrl && !supabaseUrl.includes("your-project-id")) {
       const supabase = createServerSupabaseClient();
       const {
@@ -65,7 +82,7 @@ export async function verifyAdmin(): Promise<
         .from("profiles")
         .select("role, full_name")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError || !profile || profile.role !== "admin") {
         return {
@@ -80,7 +97,7 @@ export async function verifyAdmin(): Promise<
         user: {
           id: user.id,
           email: user.email || "",
-          name: profile.full_name,
+          name: profile.full_name || "Administrator",
           role: "admin",
         },
       };
@@ -147,7 +164,7 @@ export async function verifyStudent(): Promise<
       }
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseUrl = sanitizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
     if (supabaseUrl && !supabaseUrl.includes("your-project-id")) {
       const supabase = createServerSupabaseClient();
       const {

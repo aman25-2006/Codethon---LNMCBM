@@ -2,19 +2,37 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * Sanitizes Supabase project URLs.
- * Automatically trims whitespace, strips accidental quotes, removes accidental
- * trailing paths like /rest/v1 or /auth/v1 copied from the Data API panel,
- * and strips any trailing slashes.
+ * Automatically trims whitespace, strips accidental quotes, extracts the project
+ * origin from any dashboard URL or nested endpoints (/rest/v1, /auth/v1, /storage/v1),
+ * and ensures a clean, valid Supabase root URL.
  */
 export function sanitizeSupabaseUrl(rawUrl: string | undefined): string {
   if (!rawUrl) return "";
-  let clean = rawUrl.trim().replace(/^["']|["']$/g, "");
-  // Strip accidental /rest/v1 or /auth/v1 endpoints copied from Supabase Data API settings
-  clean = clean.replace(/\/rest\/v1\/?$/i, "");
-  clean = clean.replace(/\/auth\/v1\/?$/i, "");
-  // Strip any trailing slashes
-  clean = clean.replace(/\/+$/, "");
-  return clean;
+  let clean = rawUrl.trim().replace(/^["']|["']$/g, "").trim();
+  if (!clean) return "";
+
+  // If user pasted dashboard URL like https://supabase.com/dashboard/project/abcdefghijk/settings/api
+  const dashboardMatch = clean.match(/supabase\.com\/dashboard\/project\/([a-z0-9_-]+)/i);
+  if (dashboardMatch && dashboardMatch[1]) {
+    return `https://${dashboardMatch[1]}.supabase.co`;
+  }
+
+  // Prepend https:// if protocol was omitted
+  if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+    clean = `https://${clean}`;
+  }
+
+  try {
+    const parsed = new URL(clean);
+    // Project URLs must strictly be protocol + host with no subpaths
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    clean = clean.replace(/\/rest\/v1\/?$/i, "");
+    clean = clean.replace(/\/auth\/v1\/?$/i, "");
+    clean = clean.replace(/\/storage\/v1\/?$/i, "");
+    clean = clean.replace(/\/+$/, "");
+    return clean;
+  }
 }
 
 /**
@@ -23,8 +41,8 @@ export function sanitizeSupabaseUrl(rawUrl: string | undefined): string {
  */
 export function getSanitizedSupabaseEnv() {
   const url = sanitizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, "") || "";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim().replace(/^["']|["']$/g, "") || "";
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, "").trim() || "";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim().replace(/^["']|["']$/g, "").trim() || "";
 
   const isUrlPlaceholder =
     !url ||

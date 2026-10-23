@@ -1,53 +1,17 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { cookies } from "next/headers";
+import { verifyAdmin } from "@/lib/auth-guard";
+import { createAdminClient, isSupabaseLive } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
-    const bootstrapCookie = cookieStore.get("lnmcbm_admin_session");
-    let isAdmin = false;
-
-    if (bootstrapCookie?.value) {
-      try {
-        const parsed = JSON.parse(bootstrapCookie.value);
-        if (parsed.role === "admin") {
-          isAdmin = true;
-        }
-      } catch {
-        // ignore
-      }
+    const auth = await verifyAdmin();
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const isSupabaseConfigured = supabaseUrl && !supabaseUrl.includes("your-project-id");
-
-    if (isSupabaseConfigured) {
-      const supabase = createServerSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.role === "admin") {
-          isAdmin = true;
-        }
-      }
-    }
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: "Unauthorized: Administrator privileges required." },
-        { status: 401 }
-      );
-    }
+    const isSupabaseConfigured = isSupabaseLive();
 
     // Default zero metrics structure
     const defaultStats = {

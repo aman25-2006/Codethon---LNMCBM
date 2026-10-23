@@ -144,19 +144,26 @@ export async function submitRegistrationRequest(
 
   // 3. Duplicate enrollment prevention: check if student is already in the roster
   if (isSupabaseLive()) {
-    const admin = createAdminClient();
-    const { data: existingStudent, error: studentCheckErr } = await admin
-      .from("students")
-      .select("id, roll_number, email")
-      .or(`roll_number.eq.${roll_number},email.eq.${email}`)
-      .maybeSingle();
+    try {
+      const admin = createAdminClient();
+      const { data: existingStudent, error: studentCheckErr } = await admin
+        .from("students")
+        .select("id, roll_number, email")
+        .or(`roll_number.eq.${roll_number},email.eq.${email}`)
+        .maybeSingle();
 
-    if (studentCheckErr) {
-      console.error("Supabase student duplicate check error:", studentCheckErr);
-    } else if (existingStudent) {
-      throw new Error(
-        `A candidate with Roll Number '${roll_number}' or Email '${email}' is already enrolled in the competition. Please sign in directly.`
-      );
+      if (studentCheckErr) {
+        console.error("Supabase student duplicate check error:", studentCheckErr);
+      } else if (existingStudent) {
+        throw new Error(
+          `A candidate with Roll Number '${roll_number}' or Email '${email}' is already enrolled in the competition. Please sign in directly.`
+        );
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes("already enrolled")) {
+        throw err;
+      }
+      console.warn("Notice: Continuing registration after remote duplicate check fallback:", err);
     }
   } else {
     const { students } = await getStudents();
