@@ -298,6 +298,15 @@ export async function startOrResumePhase1(
 
   let session = await getStudentSession(studentId);
 
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    if (!session || session.status === "phase1_in_progress" || session.status === "not_started") {
+      throw new Error(
+        "EXAM_NOT_ACTIVE: The examination is currently not active. Please wait for the exam controller to commence the test."
+      );
+    }
+  }
+
   const selectedTrack = requestedTrack || session?.phase2_category || "C";
   const selectedLang =
     requestedLanguage ||
@@ -306,7 +315,6 @@ export async function startOrResumePhase1(
 
   if (!session) {
     // Create new exam session
-    const compSettings = await getCompetitionSettings();
     const durationMin = compSettings?.phase1_duration_minutes || 45;
     const expiresAt = new Date(now.getTime() + durationMin * 60 * 1000).toISOString();
 
@@ -521,6 +529,11 @@ export async function saveCandidateAnswer(
     throw new Error("No active exam session found.");
   }
 
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    throw new Error("EXAM_NOT_ACTIVE: The examination has concluded or been stopped by the administrator.");
+  }
+
   if (session.is_terminated) {
     throw new Error(
       `EXAM_TERMINATED: Examination access has been terminated: ${session.termination_reason || "Integrity policy violation."}`
@@ -601,6 +614,11 @@ export async function submitPhase1Exam(studentId: string): Promise<{
   const session = await getStudentSession(studentId);
   if (!session) {
     throw new Error("No active exam session found.");
+  }
+
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    throw new Error("EXAM_NOT_ACTIVE: The examination has concluded or been stopped by the administrator.");
   }
 
   if (session.is_terminated) {
@@ -1164,6 +1182,13 @@ export async function startPhase2(
     throw new Error("No exam session found for candidate.");
   }
 
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    throw new Error(
+      "EXAM_NOT_ACTIVE: The examination is currently not active. The administrator has stopped or not yet commenced the test."
+    );
+  }
+
   if (session.is_terminated) {
     throw new Error(`EXAM_TERMINATED: Examination access terminated: ${session.termination_reason || "Violation of rules"}`);
   }
@@ -1215,7 +1240,6 @@ export async function startPhase2(
   // Validate track readiness (must have 2 valid problems)
   const problems = await getAssignedProblemsForTrack(category, resolvedLang);
 
-  const compSettings = await getCompetitionSettings();
   const durationMin = compSettings?.phase2_duration_minutes || 30;
   const expiresAt = new Date(now.getTime() + durationMin * 60 * 1000).toISOString();
 
@@ -1404,6 +1428,12 @@ export async function savePhase2Draft(
       `EXAM_TERMINATED: Examination access has been terminated: ${session.termination_reason || "Integrity policy violation."}`
     );
   }
+
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    throw new Error("EXAM_NOT_ACTIVE: The examination has ended or is paused by the administrator.");
+  }
+
   if (session.status !== "phase2_in_progress") {
     throw new Error("Phase 2 examination is not currently in progress.");
   }
@@ -1469,6 +1499,12 @@ export async function runPhase2SampleTest(
       `EXAM_TERMINATED: Examination access has been terminated: ${session.termination_reason || "Integrity policy violation."}`
     );
   }
+
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    throw new Error("EXAM_NOT_ACTIVE: The examination has ended or is paused by the administrator.");
+  }
+
   if (session.status !== "phase2_in_progress") {
     throw new Error("Phase 2 examination is not currently in progress.");
   }
@@ -1519,6 +1555,12 @@ export async function submitPhase2Problem(
       `EXAM_TERMINATED: Examination access has been terminated: ${session.termination_reason || "Integrity policy violation."}`
     );
   }
+
+  const compSettings = await getCompetitionSettings();
+  if (compSettings.status !== "in_progress") {
+    throw new Error("EXAM_NOT_ACTIVE: The examination has ended or is paused by the administrator.");
+  }
+
   if (session.status !== "phase2_in_progress") {
     throw new Error("Phase 2 examination is not currently in progress.");
   }
@@ -1788,6 +1830,62 @@ export async function autoSubmitPhase2OnExpiry(studentId: string): Promise<void>
   } catch (emailErr) {
     console.error("Failed to dispatch scorecard email on autoSubmitPhase2OnExpiry:", emailErr);
   }
+}
+
+/**
+ * Master Controller: Immediately stops and auto-submits all currently in-progress
+ * student exam sessions across Phase 1 and Phase 2.
+ */
+export async function stopAllActiveExams(): Promise<{ closedPhase1: number; closedPhase2: number }> {
+  let closedPhase1 = 0;
+  let closedPhase2 = 0;
+
+  if (isSupabaseLive()) {
+    const admin = createAdminClient();
+    const { data: activeSessions, error } = await admin
+      .from("exam_sessions")
+      .select("id, student_id, status")
+      .in("status", ["phase1_in_progress", "phase2_in_progress"])
+      .eq("is_terminated", false);
+
+    if (error) {
+      console.error("Failed to query active sessions for stopAllActiveExams:", error);
+    }
+
+    if (activeSessions && activeSessions.length > 0) {
+      for (const sess of activeSessions) {
+        try {
+          if (sess.status === "phase1_in_progress") {
+            await submitPhase1Exam(sess.student_id);
+            closedPhase1++;
+          } else if (sess.status === "phase2_in_progress") {
+            await autoSubmitPhase2OnExpiry(sess.student_id);
+            closedPhase2++;
+          }
+        } catch (err) {
+          console.error(`Error auto-closing session ${sess.id} for student ${sess.student_id}:`, err);
+        }
+      }
+    }
+  } else {
+    const localSessions = getLocalSessionsStore();
+    for (const sess of localSessions) {
+      if (sess.is_terminated) continue;
+      try {
+        if (sess.status === "phase1_in_progress") {
+          await submitPhase1Exam(sess.student_id);
+          closedPhase1++;
+        } else if (sess.status === "phase2_in_progress") {
+          await autoSubmitPhase2OnExpiry(sess.student_id);
+          closedPhase2++;
+        }
+      } catch (err) {
+        console.error(`Error auto-closing local session ${sess.id}:`, err);
+      }
+    }
+  }
+
+  return { closedPhase1, closedPhase2 };
 }
 
 // ==============================================================================

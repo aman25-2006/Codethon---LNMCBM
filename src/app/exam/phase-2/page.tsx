@@ -28,6 +28,7 @@ import {
   X,
   AlertTriangle,
   Copy,
+  Square,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +98,7 @@ export default function Phase2ExamWorkspacePage() {
   const [isTerminated, setIsTerminated] = React.useState(false);
   const [terminationReason, setTerminationReason] = React.useState<string | null>(null);
   const [showPreFlightNotice, setShowPreFlightNotice] = React.useState(false);
+  const [isExamStoppedByAdmin, setIsExamStoppedByAdmin] = React.useState(false);
 
   const activeProblem = assignedProblems[activeProblemIndex] || null;
   const activeWorkstate = activeProblem ? workstates[activeProblem.id] : null;
@@ -197,6 +199,30 @@ export default function Phase2ExamWorkspacePage() {
   React.useEffect(() => {
     loadPhase2Data();
   }, [loadPhase2Data]);
+
+  // Real-time synchronization: listen for admin stopping the test from operations center
+  React.useEffect(() => {
+    if (sessionStatus === "phase2_completed" || isTerminated || isExamStoppedByAdmin) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/student/competition-status");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status && data.status !== "in_progress") {
+            setIsExamStoppedByAdmin(true);
+            setTimeout(() => {
+              router.push("/student/scorecard");
+            }, 3500);
+          }
+        }
+      } catch {
+        // network jitter, ignore
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [sessionStatus, isTerminated, isExamStoppedByAdmin, router]);
 
   // Phase 2 Live Timer Loop
   React.useEffect(() => {
@@ -1182,6 +1208,29 @@ export default function Phase2ExamWorkspacePage() {
         reason={warningMessage}
         onReenterFullscreen={requestFullscreen}
       />
+
+      {/* ADMIN EMERGENCY/OFFICIAL STOP OVERLAY */}
+      {isExamStoppedByAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl border border-rose-200 animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Square className="w-8 h-8 fill-current" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-extrabold text-slate-900">
+                Examination Concluded by Controller
+              </h2>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                The administrator has officially stopped the examination. All of your coding solutions have been recorded and submitted automatically.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 flex items-center justify-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Redirecting to candidate scorecard...</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

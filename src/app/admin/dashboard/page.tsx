@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DatabasePersistenceModal } from "@/components/admin/DatabasePersistenceModal";
+import { CompetitionMasterControl } from "@/components/admin/CompetitionMasterControl";
 
 interface DashboardStats {
   totalStudents: number;
@@ -130,6 +131,9 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Master Examination Start/Stop Controller */}
+      <CompetitionMasterControl onStatusChange={handleRefresh} />
 
       {/* Ephemeral In-Memory Warning Banner */}
       {!isLoading && stats && !stats.isDatabaseConnected && (

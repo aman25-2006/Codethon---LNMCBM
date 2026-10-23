@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Loader2
 } from "lucide-react";
+import { CompetitionMasterControl } from "@/components/admin/CompetitionMasterControl";
 
 const navigationItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -216,7 +217,9 @@ export default function AdminLayout({
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+              <CompetitionMasterControl compact />
+
+              <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>System Online</span>
               </div>

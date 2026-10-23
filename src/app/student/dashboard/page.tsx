@@ -21,6 +21,7 @@ import {
   ChevronRight,
   LogOut,
   Award,
+  Radio,
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -110,6 +111,10 @@ export default function StudentDashboardPage() {
   const [activeTrack, setActiveTrack] = React.useState<string | null>(null);
   const [activeLang, setActiveLang] = React.useState<string | null>(null);
 
+  // Real-time Competition Master Control State
+  const [competitionStatus, setCompetitionStatus] = React.useState<string>("draft");
+  const [isTestLive, setIsTestLive] = React.useState<boolean>(false);
+
   // Fetch candidate profile and current exam status
   const loadDashboardData = React.useCallback(async () => {
     try {
@@ -125,7 +130,19 @@ export default function StudentDashboardPage() {
       const meData = await meRes.json();
       setStudent(meData.student);
 
-      // 2. Get active exam session if exists
+      // 2. Get competition status
+      try {
+        const compRes = await fetch("/api/student/competition-status");
+        if (compRes.ok) {
+          const compData = await compRes.json();
+          setCompetitionStatus(compData.status || "draft");
+          setIsTestLive(Boolean(compData.isTestLive));
+        }
+      } catch (cErr) {
+        console.warn("Failed to query competition status:", cErr);
+      }
+
+      // 3. Get active exam session if exists
       const sessionRes = await fetch("/api/student/exam/session");
       if (sessionRes.ok) {
         const sessionData = await sessionRes.json();
@@ -167,6 +184,22 @@ export default function StudentDashboardPage() {
 
   React.useEffect(() => {
     loadDashboardData();
+
+    // Live background sync: dynamically unlock or lock test when admin clicks Start / Stop
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/student/competition-status");
+        if (res.ok) {
+          const d = await res.json();
+          setCompetitionStatus(d.status || "draft");
+          setIsTestLive(Boolean(d.isTestLive));
+        }
+      } catch {
+        // network jitter, ignore
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, [loadDashboardData]);
 
   // Handle starting / resuming Phase 1 with chosen language track
@@ -281,6 +314,54 @@ export default function StudentDashboardPage() {
         </div>
       )}
 
+      {/* Live Master Examination Gate Banner */}
+      {!loading && (
+        isTestLive ? (
+          <div className="p-4 sm:p-5 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50/50 to-emerald-50 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center shrink-0">
+                <Radio className="w-5 h-5 text-emerald-600 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm sm:text-base text-emerald-950 flex items-center gap-2">
+                  Examination is LIVE
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                </h4>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  The examination controller has commenced the test. You may choose your track and start Phase 1.
+                </p>
+              </div>
+            </div>
+            <Badge className="bg-emerald-600 text-white font-bold text-xs px-3 py-1 self-start sm:self-auto shrink-0">
+              PORTAL UNLOCKED ✓
+            </Badge>
+          </div>
+        ) : (
+          <div className="p-4 sm:p-5 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50/30 to-amber-50 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5 text-amber-600 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-sm sm:text-base text-amber-950">
+                  {competitionStatus === "completed" || competitionStatus === "results_published"
+                    ? "Examination Concluded by Controller"
+                    : "Examination Has Not Commenced Yet"}
+                </h4>
+                <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                  {competitionStatus === "completed" || competitionStatus === "results_published"
+                    ? "The examination session has been officially stopped by the administrator. Further test attempts are locked."
+                    : "Please wait. The exam controller has not started the test yet. This page will automatically unlock when the controller clicks Start."}
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-amber-400 bg-amber-100 text-amber-900 font-bold font-mono text-xs px-2.5 py-1 self-start sm:self-auto shrink-0">
+              STATUS: {competitionStatus.toUpperCase()}
+            </Badge>
+          </div>
+        )
+      )}
+
       {/* Two-Phase Assessment Timeline Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* PHASE 1 CARD */}
@@ -344,15 +425,44 @@ export default function StudentDashboardPage() {
             {sessionStatus === "not_started" && (
               <Button
                 variant="primary"
-                className="w-full text-xs font-bold py-2.5 shadow-sm bg-blue-600 hover:bg-blue-700"
-                onClick={() => setShowInstructionsModal(true)}
+                className={`w-full text-xs font-bold py-2.5 shadow-sm transition-all ${
+                  isTestLive
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300 hover:bg-slate-200"
+                }`}
+                disabled={!isTestLive}
+                onClick={() => {
+                  if (!isTestLive) return;
+                  setShowInstructionsModal(true);
+                }}
               >
-                Select Language Track &amp; Start Phase 1
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                {isTestLive ? (
+                  <>
+                    Select Language Track &amp; Start Phase 1
+                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+                    Waiting for Exam Controller to Start Test...
+                  </>
+                )}
               </Button>
             )}
 
-            {sessionStatus === "phase1_in_progress" && (
+            {sessionStatus === "phase1_in_progress" && !isTestLive && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-rose-950">
+                  <Lock className="w-4 h-4 text-rose-600" />
+                  Examination Stopped by Administrator
+                </div>
+                <p className="text-[11px] text-rose-800">
+                  The exam controller has concluded the competition. All submitted answers have been preserved and recorded.
+                </p>
+              </div>
+            )}
+
+            {sessionStatus === "phase1_in_progress" && isTestLive && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs p-2 bg-amber-100/70 border border-amber-200 rounded-lg text-amber-900 font-medium">
                   <span className="flex items-center gap-1.5">
@@ -464,14 +574,25 @@ export default function StudentDashboardPage() {
             </div>
 
             {sessionStatus === "phase1_completed" ? (
-              <Button
-                variant="primary"
-                className="w-full text-xs font-bold py-2.5 bg-blue-700 hover:bg-blue-800"
-                onClick={() => router.push("/exam/phase-2")}
-              >
-                Proceed to Phase 2 Domain Selection
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Button>
+              isTestLive ? (
+                <Button
+                  variant="primary"
+                  className="w-full text-xs font-bold py-2.5 bg-blue-700 hover:bg-blue-800"
+                  onClick={() => router.push("/exam/phase-2")}
+                >
+                  Proceed to Phase 2 Domain Selection
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  disabled
+                  className="w-full text-xs font-bold py-2.5 bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300 hover:bg-slate-200"
+                >
+                  <Lock className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+                  Phase 2 Locked (Examination Concluded)
+                </Button>
+              )
             ) : sessionStatus === "phase2_completed" ? (
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 space-y-1">
                 <div className="font-bold flex items-center gap-1.5 text-emerald-900">

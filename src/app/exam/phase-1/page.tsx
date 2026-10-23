@@ -21,6 +21,7 @@ import {
   Send,
   ArrowRight,
   HelpCircle,
+  Square,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +92,7 @@ export default function Phase1ExaminationPage() {
   const [tempTrack, setTempTrack] = React.useState<string>("C");
   const [tempDsaLang, setTempDsaLang] = React.useState<"C" | "C++" | "Java">("C++");
   const [switchingTrack, setSwitchingTrack] = React.useState(false);
+  const [isExamStoppedByAdmin, setIsExamStoppedByAdmin] = React.useState(false);
 
   // Initialize or resume examination
   const initExam = React.useCallback(async () => {
@@ -106,6 +108,11 @@ export default function Phase1ExaminationPage() {
         if (data.is_terminated || data.error?.includes("TERMINATED") || data.error?.includes("terminated")) {
           setIsTerminated(true);
           setTerminationReason(data.error || "Examination access terminated.");
+          setLoading(false);
+          return;
+        }
+        if (data.error?.includes("EXAM_NOT_ACTIVE") || data.error?.includes("not active")) {
+          setExamError("The examination is currently not active. Please wait for the exam controller to start the test.");
           setLoading(false);
           return;
         }
@@ -158,6 +165,35 @@ export default function Phase1ExaminationPage() {
   React.useEffect(() => {
     initExam();
   }, [initExam]);
+
+  // Real-time synchronization: listen for admin stopping the test from operations center
+  React.useEffect(() => {
+    if (phase1Completed || isTerminated || isExamStoppedByAdmin) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/student/competition-status");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status && data.status !== "in_progress") {
+            setIsExamStoppedByAdmin(true);
+            try {
+              await fetch("/api/student/exam/submit-phase1", { method: "POST" });
+            } catch {
+              // ignore
+            }
+            setTimeout(() => {
+              router.push("/student/dashboard");
+            }, 3500);
+          }
+        }
+      } catch {
+        // network jitter, ignore
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [phase1Completed, isTerminated, isExamStoppedByAdmin, router]);
 
   const handleSwitchTrack = async (targetTrack: string, targetLang?: string | null) => {
     setSwitchingTrack(true);
@@ -1108,6 +1144,29 @@ export default function Phase1ExaminationPage() {
         reason={warningMessage}
         onReenterFullscreen={requestFullscreen}
       />
+
+      {/* ADMIN EMERGENCY/OFFICIAL STOP OVERLAY */}
+      {isExamStoppedByAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl border border-rose-200 animate-in fade-in zoom-in-95">
+            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Square className="w-8 h-8 fill-current" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-extrabold text-slate-900">
+                Examination Concluded by Controller
+              </h2>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                The administrator has officially stopped the examination. All of your answered questions have been saved and submitted automatically.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 flex items-center justify-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Redirecting to candidate portal...</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

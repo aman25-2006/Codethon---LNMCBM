@@ -52,14 +52,14 @@ export interface PreflightChecklistResult {
 }
 
 export const ALLOWED_STATE_TRANSITIONS: Record<CompetitionStatus, CompetitionStatus[]> = {
-  draft: ["registration_open", "registration_closed"],
-  registration_open: ["registration_closed"],
-  registration_closed: ["registration_open", "ready"],
-  ready: ["registration_closed", "in_progress"],
-  in_progress: ["evaluation_pending", "completed"],
-  evaluation_pending: ["completed"],
-  completed: ["results_published"],
-  results_published: ["completed"],
+  draft: ["registration_open", "registration_closed", "ready", "in_progress"],
+  registration_open: ["registration_closed", "ready", "in_progress"],
+  registration_closed: ["registration_open", "ready", "in_progress"],
+  ready: ["registration_closed", "in_progress", "draft"],
+  in_progress: ["evaluation_pending", "completed", "ready"],
+  evaluation_pending: ["completed", "in_progress"],
+  completed: ["results_published", "in_progress", "ready"],
+  results_published: ["completed", "in_progress"],
 };
 
 export const DEFAULT_COMPETITION_SETTINGS: CompetitionSettingsDTO = {
