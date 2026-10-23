@@ -129,12 +129,17 @@ export async function submitRegistrationRequest(
     const admin = createAdminClient();
 
     // Check duplicate pending request
-    const { data: existingPending } = await admin
+    const { data: existingPending, error: pendingCheckErr } = await admin
       .from("student_registrations")
       .select("id, status")
       .or(`roll_number.eq.${roll_number},email.eq.${email}`)
       .eq("status", "pending")
       .maybeSingle();
+
+    if (pendingCheckErr) {
+      console.error("Supabase pending check error:", pendingCheckErr);
+      throw new Error(`Failed to submit registration: ${pendingCheckErr.message}`);
+    }
 
     if (existingPending) {
       throw new Error(
@@ -143,11 +148,16 @@ export async function submitRegistrationRequest(
     }
 
     // Check if already approved/enrolled in students
-    const { data: existingStudent } = await admin
+    const { data: existingStudent, error: studentCheckErr } = await admin
       .from("students")
       .select("id")
       .or(`roll_number.eq.${roll_number},email.eq.${email}`)
       .maybeSingle();
+
+    if (studentCheckErr) {
+      console.error("Supabase student check error:", studentCheckErr);
+      throw new Error(`Failed to submit registration: ${studentCheckErr.message}`);
+    }
 
     if (existingStudent) {
       throw new Error(

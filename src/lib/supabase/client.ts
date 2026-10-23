@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { sanitizeSupabaseUrl } from "./admin";
 
 /**
  * Creates a Supabase client for use in browser client components.
@@ -6,7 +7,7 @@ import { createBrowserClient } from "@supabase/ssr";
  * Never exposes service-role keys.
  */
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/^["']|["']$/g, "");
+  const supabaseUrl = sanitizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim().replace(/^["']|["']$/g, "");
 
   if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes("your-project-id")) {

@@ -459,8 +459,10 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs (action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
 
 -- ==============================================================================
--- SUCCESS MESSAGE
+-- SUCCESS MESSAGE & SCHEMA CACHE RELOAD
 -- ==============================================================================
+NOTIFY pgrst, 'reload schema';
+
 DO $$
 BEGIN
     RAISE NOTICE 'LNMCBM Codethon 2026 database schema successfully provisioned!';
